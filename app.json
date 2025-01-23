@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RemembermeFront",
-    "slug": "RemembermeFront",
+    "slug": "rememberme-front",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,7 +22,14 @@
       }
     },
     "web": {
+      "bundler": "metro",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4ce16107-26ac-4b78-9f86-6a7031483a97"
+      }
+    },
+    "owner": "hozero95"
   }
 }
