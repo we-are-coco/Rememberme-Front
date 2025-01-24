@@ -1,27 +1,19 @@
 import "./global.css";
-import {StyleSheet, Text, View} from 'react-native';
 import {GluestackUIProvider} from "@/src/components/ui/gluestack-ui-provider";
-import {Box} from "@/src/components/ui/box";
+import React from "react";
+import {NavigationContainer} from "@react-navigation/native";
+import {BottomBar} from "@/src/components/common/navigation";
+import {StatusBar} from 'react-native';
 
-export default function App() {
+const App = () => {
     return (
-        <GluestackUIProvider>
-            <Box
-                className={"bg-primary-500 p-5"}
-            >
-                <Text className={"text-typography-0"}>
-                    Open up App.tsx to start working on your app!
-                </Text>
-            </Box>
+        <GluestackUIProvider >
+            <StatusBar/>
+            <NavigationContainer>
+                <BottomBar/>
+            </NavigationContainer>
         </GluestackUIProvider>
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-});
+export default App;
