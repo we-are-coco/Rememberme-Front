@@ -20,7 +20,8 @@ const BottomBar = () => {
                     tabBarIcon: ({color, size}) => (
                         <Ionicons name={"home"} size={size} color={color}/>
                     ),
-                    tabBarActiveTintColor: "#ffaa00"
+                    tabBarActiveTintColor: "#ffaa00",
+                    title: "홈 화면"
                 }}
             />
             <Tab.Screen
@@ -30,7 +31,8 @@ const BottomBar = () => {
                     tabBarIcon: ({color, size}) => (
                         <Ionicons name={"settings-sharp"} size={size} color={color}/>
                     ),
-                    tabBarActiveTintColor: "#ffaa00"
+                    tabBarActiveTintColor: "#ffaa00",
+                    title: "설정"
                 }}
             />
         </Tab.Navigator>
