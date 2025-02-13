@@ -1,11 +1,18 @@
 {
   "name": "remembermefront",
   "version": "1.0.0",
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+      }
+    }
+  },
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "npx expo run:android",
+    "ios": "npx expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
@@ -41,6 +48,7 @@
     "@gluestack-ui/toast": "^1.0.8",
     "@gluestack-ui/tooltip": "^0.1.38",
     "@legendapp/motion": "^2.4.0",
+    "@react-native-firebase/app": "^21.7.1",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "axios": "^1.7.9",
@@ -48,6 +56,7 @@
     "expo-camera": "~16.0.16",
     "expo-dev-client": "~5.0.12",
     "expo-image-picker": "~16.0.6",
+    "expo-notifications": "~0.29.13",
     "expo-secure-store": "~14.0.1",
     "expo-status-bar": "~2.0.1",
     "nativewind": "^4.1.23",
@@ -65,6 +74,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@react-native-community/cli": "latest",
     "@types/react": "~18.3.12",
     "typescript": "^5.3.3"
   },
