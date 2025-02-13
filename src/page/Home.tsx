@@ -5,7 +5,7 @@ import {HStack} from "@/src/components/ui/hstack";
 import {FlatList, ScrollView} from "react-native";
 import {Input, InputField, InputIcon, InputSlot} from "@/src/components/ui/input";
 import {AddIcon, ChevronDownIcon, SearchIcon} from "@/src/components/ui/icon";
-import React from "react";
+import React, {useEffect, useState} from "react";
 import {
     Select,
     SelectBackdrop,
@@ -27,6 +27,8 @@ import {Pressable} from "@/src/components/ui/pressable";
 import {Ionicons} from "@expo/vector-icons";
 import {Image} from "@/src/components/ui/image";
 import category from "@/src/static/data/category";
+import {useNavigation} from "@react-navigation/native";
+import {getToken} from '../services/AuthService';
 
 interface Category {
     id: number;
@@ -42,6 +44,27 @@ interface Item {
 }
 
 const Home = () => {
+    const navigation = useNavigation();
+    const [searchText, setSearchText] = useState("");
+
+    useEffect(() => {
+        const fetchToken = async () => {
+            const storedToken = await getToken();
+            if (!storedToken) {
+                // @ts-ignore
+                navigation.reset({
+                    index: 0,
+                    // @ts-ignore
+                    routes: [{name: "Start"}]
+                });
+            }
+        };
+        // noinspection JSIgnoredPromiseFromCall
+        fetchToken();
+    }, []);
+
+    const filteredData = data.filter(item => item.title.toLowerCase().includes(searchText.toLowerCase()));
+
     const onValueChangeSelect = (message: string) => {
         alert(message);
     };
@@ -78,7 +101,9 @@ const Home = () => {
                                         <Text size={"md"} bold className={"text-typography-0"}>{d_day}</Text>
                                     </Box>
                                 </HStack>
-                                <Pressable onPress={() => {alert(item.id)}}>
+                                <Pressable onPress={() => {
+                                    alert(item.id)
+                                }}>
                                     <Ionicons name={"trash-outline"} size={24} color={"black"}/>
                                 </Pressable>
                             </HStack>
@@ -97,7 +122,11 @@ const Home = () => {
                     <HStack space={"md"} className={"p-2"}>
                         {
                             category.map((item: Category) => (
-                                <Button key={item.id} size={"md"} className={"rounded-full"}>
+                                <Button
+                                    key={item.id}
+                                    size={"md"}
+                                    className={"rounded-full"}
+                                >
                                     <Text bold className={"text-typography-0"}>{item.name}</Text>
                                 </Button>
                             ))
@@ -132,17 +161,19 @@ const Home = () => {
                     </SelectPortal>
                 </Select>
                 {/* 검색 Input */}
-                <Input className={"flex-1"}>
+                <Input
+                    className={"flex-1"}
+                >
                     <InputSlot className={"pl-3"}>
                         <InputIcon as={SearchIcon}/>
                     </InputSlot>
-                    <InputField placeholder={"Search..."}/>
+                    <InputField placeholder={"Search..."} value={searchText} onChangeText={setSearchText}/>
                 </Input>
             </HStack>
 
             {/* 리스트 영역 */}
             <FlatList
-                data={data}
+                data={filteredData}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
                 className={"flex-1 p-2"}

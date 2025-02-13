@@ -4,33 +4,35 @@
     "slug": "rememberme-front",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/image/coco-splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffaa00"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/image/coco-icon.png",
+        "backgroundColor": "#f5efcd"
       },
       "package": "com.coco.rememberme"
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/image/coco-icon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "4ce16107-26ac-4b78-9f86-6a7031483a97"
+        "projectId": "3a2b2e44-3fa0-4c92-892c-ba96f4869589"
       }
     },
-    "owner": "hozero95"
+    "owner": "ms-coco",
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

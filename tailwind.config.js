@@ -174,7 +174,8 @@ module.exports = {
                     error: 'rgb(var(--color-indicator-error)/<alpha-value>)',
                 },
                 custom: {
-                    primary: '#ffaa00'
+                    orange: '#ffaa00',
+                    beige: '#f5efcd'
                 }
             },
             fontFamily: {
