@@ -18,17 +18,9 @@ import {
 import {Heading} from "@/src/components/ui/heading";
 import {Text} from "@/src/components/ui/text";
 import {login} from "@/src/api/api";
-
-interface LoginForm {
-    email: string;
-    password: string;
-}
-
-interface AlertForm {
-    title: string;
-    content: string;
-    submit: any;
-}
+import {Pressable} from "@/src/components/ui/pressable";
+import {Ionicons} from "@expo/vector-icons";
+import {LoginForm, AlertForm} from "@/src/utils/interfaceCase";
 
 const Login = () => {
     const navigation = useNavigation();
@@ -75,6 +67,12 @@ const Login = () => {
 
     return (
         <Box className={"flex-1 justify-center items-center bg-white"}>
+            <Pressable
+                className={"absolute top-5 left-5 bg-white bg-opacity-50 p-4 rounded-full"}
+                onPress={() => navigation.goBack()}
+            >
+                <Ionicons name={"arrow-back"} size={24} color={"black"}/>
+            </Pressable>
             <Box className={"flex justify-center items-end"} style={{paddingTop: 20}}>
                 <Box style={{paddingRight: 40}}>
                     <Image
@@ -137,31 +135,31 @@ const Login = () => {
                 onClose={() => {
                     setShowAlert(false);
                 }}
-                size="md"
+                size={"md"}
             >
                 <AlertDialogBackdrop/>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <Heading className="text-typography-950 font-semibold" size="md">
+                        <Heading className={"text-typography-950 font-semibold"} size={"md"}>
                             {alertForm.title}
                         </Heading>
                     </AlertDialogHeader>
-                    <AlertDialogBody className="mt-3 mb-4">
-                        <Text size="sm">
+                    <AlertDialogBody className={"mt-3 mb-4"}>
+                        <Text size={"sm"}>
                             {alertForm.content}
                         </Text>
                     </AlertDialogBody>
-                    <AlertDialogFooter className="">
+                    <AlertDialogFooter>
                         <Button
-                            variant="outline"
-                            action="secondary"
+                            variant={"outline"}
+                            action={"secondary"}
                             onPress={() => {
                                 if (alertForm.submit !== null) {
                                     alertForm.submit();
                                 }
                                 setShowAlert(false);
                             }}
-                            size="sm"
+                            size={"sm"}
                         >
                             <ButtonText>확인</ButtonText>
                         </Button>

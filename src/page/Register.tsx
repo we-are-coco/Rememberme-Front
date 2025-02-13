@@ -29,19 +29,8 @@ import {Heading} from "@/src/components/ui/heading";
 import {Button, ButtonText} from "@/src/components/ui/button";
 import {register} from "@/src/api/api";
 import {useNavigation} from "@react-navigation/native";
-
-interface RegisterForm {
-    email: string;
-    name: string;
-    password: string;
-    passwordCheck: string;
-}
-
-interface AlertForm {
-    title: string;
-    content: string;
-    submit: any;
-}
+import {Ionicons} from "@expo/vector-icons";
+import {RegisterForm, AlertForm} from "@/src/utils/interfaceCase";
 
 const Register = () => {
     const navigation = useNavigation();
@@ -151,6 +140,12 @@ const Register = () => {
 
     return (
         <Box className={"flex-1 justify-center items-center bg-white"}>
+            <Pressable
+                className={"absolute top-5 left-5 bg-white bg-opacity-50 p-4 rounded-full"}
+                onPress={() => navigation.goBack()}
+            >
+                <Ionicons name={"arrow-back"} size={24} color={"black"}/>
+            </Pressable>
             <Box className={"flex justify-center items-end"} style={{paddingTop: 20}}>
                 <Box style={{paddingRight: 40}}>
                     <Image

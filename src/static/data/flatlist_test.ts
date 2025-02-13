@@ -1,25 +1,68 @@
 interface Item {
-    id: number;
-    category: string;
+    id: string;
+    user_id: string;
     title: string;
-    expires: string;
+    category_id: string;
+    description: string;
+    brand: string;
+    type: string;
+    url: string;
+    date: string;
+    time: string;
+    from_location: string;
+    to_location: string;
+    location: string;
+    details: string;
+    start_date: string;
+    end_date: string;
+    code: string;
+    created_at: string;
+    updated_at: string;
 }
 
 const data: Item[] = [
-    {id: 1, title: 'item1', category: 'category', expires: '2025-01-23'},
-    {id: 2, title: 'item2', category: 'category', expires: '2025-01-25'},
-    {id: 3, title: 'item3', category: 'category', expires: '2026-01-24'},
-    {id: 4, title: 'item4', category: 'category', expires: '2025-01-24'},
-    {id: 5, title: 'item5', category: 'category', expires: '2025-01-24'},
-    {id: 6, title: 'item6', category: 'category', expires: '2025-01-24'},
-    {id: 7, title: 'item7', category: 'category', expires: '2025-01-24'},
-    {id: 8, title: 'item8', category: 'category', expires: '2025-01-24'},
-    {id: 9, title: 'item9', category: 'category', expires: '2025-01-24'},
-    {id: 10, title: 'item10', category: 'category', expires: '2025-01-24'},
-    {id: 11, title: 'item11', category: 'category', expires: '2025-01-24'},
-    {id: 12, title: 'item12', category: 'category', expires: '2025-01-24'},
-    {id: 13, title: 'item13', category: 'category', expires: '2025-01-24'},
-    {id: 14, title: 'item14', category: 'category', expires: '2025-01-24'},
+    {
+        id: "id1",
+        user_id: "user1",
+        title: "item1",
+        category_id: "CategoryID-00",
+        description: "description1",
+        brand: "brand1",
+        type: "type1",
+        url: "https://cocoscreenshot.blob.core.windows.net/screenshots/01JKD4ZTGES0P5HEK5QATVZCGB/temp/KakaoTalk_20250212_214950895_03.jpg",
+        date: "2025-01-23",
+        time: "20:00",
+        from_location: "from1",
+        to_location: "to1",
+        location: "loc1",
+        details: "detail1",
+        start_date: "2025-01-23",
+        end_date: "2025-01-24",
+        code: "code1",
+        created_at: "2025-01-23 20:00:00",
+        updated_at: "2025-01-23 20:00:00"
+    },
+    {
+        id: "id2",
+        user_id: "user1",
+        title: "item1",
+        category_id: "CategoryID-00",
+        description: "description1",
+        brand: "brand1",
+        type: "type1",
+        url: "https://cocoscreenshot.blob.core.windows.net/screenshots/01JKD4ZTGES0P5HEK5QATVZCGB/temp/KakaoTalk_20250212_214950895_03.jpg",
+        date: "2025-01-23",
+        time: "20:00",
+        from_location: "from1",
+        to_location: "to1",
+        location: "loc1",
+        details: "detail1",
+        start_date: "2025-01-23",
+        end_date: "2025-01-24",
+        code: "code1",
+        created_at: "2025-01-23 20:00:00",
+        updated_at: "2025-01-23 20:00:00"
+    },
 ];
 
 export default data;

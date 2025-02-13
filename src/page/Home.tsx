@@ -1,6 +1,6 @@
 import {Text} from "@/src/components/ui/text";
 import {Box} from "@/src/components/ui/box";
-import {Button} from "@/src/components/ui/button";
+import {Button, ButtonText} from "@/src/components/ui/button";
 import {HStack} from "@/src/components/ui/hstack";
 import {FlatList, ScrollView} from "react-native";
 import {Input, InputField, InputIcon, InputSlot} from "@/src/components/ui/input";
@@ -26,26 +26,42 @@ import {Card} from "@/src/components/ui/card";
 import {Pressable} from "@/src/components/ui/pressable";
 import {Ionicons} from "@expo/vector-icons";
 import {Image} from "@/src/components/ui/image";
-import category from "@/src/static/data/category";
 import {useNavigation} from "@react-navigation/native";
-import {getToken} from '../services/AuthService';
-
-interface Category {
-    id: number;
-    name: string;
-    code: string;
-}
-
-interface Item {
-    id: number;
-    category: string;
-    title: string;
-    expires: string;
-}
+import {getToken, removeToken} from '../services/AuthService';
+import {getCategoryList, getUser} from "@/src/api/api";
+import {
+    AlertDialog,
+    AlertDialogBackdrop,
+    AlertDialogBody,
+    AlertDialogContent,
+    AlertDialogFooter,
+    AlertDialogHeader
+} from "@/src/components/ui/alert-dialog";
+import {Category, Item, AlertForm} from "@/src/utils/interfaceCase";
 
 const Home = () => {
     const navigation = useNavigation();
+    const [alertForm, setAlertForm] = useState<AlertForm>({
+        title: "",
+        content: "",
+        submit: null,
+    });
+    const [showAlert, setShowAlert] = useState(false);
     const [searchText, setSearchText] = useState("");
+    const [categoryList, setCategoryList] = useState<Category[] | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
+
+    const filteredData = () => {
+        return data.filter(item => item.title.toLowerCase().includes(searchText.toLowerCase()));
+    };
+
+    const onValueChangeSelect = (message: string) => {
+        alert(message);
+    };
+
+    const handleChangeCategory = (category: string) => {
+        setSelectedCategory(category);
+    };
 
     useEffect(() => {
         const fetchToken = async () => {
@@ -57,29 +73,54 @@ const Home = () => {
                     // @ts-ignore
                     routes: [{name: "Start"}]
                 });
+            } else {
+                const responseData = await getUser();
+
+                if (responseData === "error") {
+                    await removeToken();
+                    setAlertForm({
+                        title: "사용자 인증 실패",
+                        content: "다시 로그인 해주세요.",
+                        submit: () => {
+                            // @ts-ignore
+                            navigation.reset({
+                                index: 0,
+                                // @ts-ignore
+                                routes: [{name: "Start"}]
+                            });
+                        },
+                    });
+                    setShowAlert(true);
+                }
             }
+        };
+        const loadCategoryList = async () => {
+            const responseData = await getCategoryList();
+
+            setCategoryList(responseData);
+            setSelectedCategory(responseData ? responseData[0].id : "");
         };
         // noinspection JSIgnoredPromiseFromCall
         fetchToken();
+        // noinspection JSIgnoredPromiseFromCall
+        loadCategoryList();
     }, []);
 
-    const filteredData = data.filter(item => item.title.toLowerCase().includes(searchText.toLowerCase()));
-
-    const onValueChangeSelect = (message: string) => {
-        alert(message);
-    };
-
     const renderItem = ({item}: { item: Item }) => {
-        const targetDate: Date = new Date(item.expires);
+        const targetDate: Date = new Date(item.date);
         const currentDate: Date = new Date();
         const timeDifference: number = targetDate.getTime() - currentDate.getTime();
         const daysLeft: number = Math.ceil(timeDifference / (1000 * 3600 * 24));
         const d_day: string = daysLeft == 0 ? 'D-Day' : daysLeft < 0 ? 'Expired' : 'D-' + daysLeft;
 
         return (
-            <Pressable className={"p-2"} onPress={() => {
-                alert("test")
-            }}>
+            <Pressable
+                className={"p-2"}
+                onPress={() => {
+                    // @ts-ignore
+                    navigation.navigate("Detail", {item: item});
+                }}
+            >
                 <HStack className={"flex w-full"}>
                     <Image
                         source={{
@@ -87,16 +128,19 @@ const Home = () => {
                         }}
                         alt={`img{item.id}`}
                         size={"xl"}
+                        // resizeMode={"contain"}
                     />
                     <Card className={"flex-1"}>
-                        <Text size={"md"}>{item.category}</Text>
-                        <VStack space={"2xl"}>
+                        <Text size={"md"}>
+                            {categoryList?.find(category => category.id === item.category_id)?.name}
+                        </Text>
+                        <VStack space={"xl"}>
                             <Heading size={"lg"} className={"mb-4"}>
                                 {item.title}
                             </Heading>
                             <HStack className={"flex items-center justify-between"}>
                                 <HStack space={"md"} className={"flex items-center justify-center"}>
-                                    <Text size={"md"}>{item.expires}</Text>
+                                    <Text size={"md"}>{item.date + " " + item.time}</Text>
                                     <Box className={"p-2 bg-primary-500 rounded-md"}>
                                         <Text size={"md"} bold className={"text-typography-0"}>{d_day}</Text>
                                     </Box>
@@ -121,13 +165,20 @@ const Home = () => {
                 <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} className={"flex-shrink"}>
                     <HStack space={"md"} className={"p-2"}>
                         {
-                            category.map((item: Category) => (
+                            categoryList && categoryList.map((item: Category) => (
                                 <Button
                                     key={item.id}
                                     size={"md"}
-                                    className={"rounded-full"}
+                                    className={`rounded-full border ${selectedCategory !== item.id ? "bg-white" : ""}`}
+                                    style={{minWidth: 75}}
+                                    onPress={() => handleChangeCategory(item.id)}
                                 >
-                                    <Text bold className={"text-typography-0"}>{item.name}</Text>
+                                    <Text
+                                        bold
+                                        className={`${selectedCategory !== item.id ? "" : "text-typography-0"}`}
+                                    >
+                                        {item.name}
+                                    </Text>
                                 </Button>
                             ))
                         }
@@ -139,12 +190,13 @@ const Home = () => {
             <HStack space={"md"} className={"p-4"}>
                 {/* 정렬 Select */}
                 <Select
-                    className={"w-28"}
+                    className={"flex-0"}
+                    style={{minWidth: 100}}
                     defaultValue={"유효기간 순"}
                     onValueChange={onValueChangeSelect}
                 >
                     <SelectTrigger variant={"outline"} size={"md"}>
-                        <SelectInput placeholder={"Select option"}/>
+                        <SelectInput placeholder={"Select option"} className={"flex-1"}/>
                         <SelectIcon className={"mr-3"} as={ChevronDownIcon}/>
                     </SelectTrigger>
                     <SelectPortal>
@@ -153,10 +205,8 @@ const Home = () => {
                             <SelectDragIndicatorWrapper>
                                 <SelectDragIndicator/>
                             </SelectDragIndicatorWrapper>
-                            <SelectItem label={"유효기간 순"} value={"valid"}/>
-                            <SelectItem label={"사용처 순"} value={"where"}/>
-                            <SelectItem label={"등록 순"} value={"created"}/>
-                            <SelectItem label={"상품명 순"} value={"title"}/>
+                            <SelectItem label={"만료기간 순"} value={"valid"}/>
+                            <SelectItem label={"등록일 순"} value={"created"}/>
                         </SelectContent>
                     </SelectPortal>
                 </Select>
@@ -173,7 +223,7 @@ const Home = () => {
 
             {/* 리스트 영역 */}
             <FlatList
-                data={filteredData}
+                data={filteredData()}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
                 className={"flex-1 p-2"}
@@ -181,9 +231,51 @@ const Home = () => {
             <Fab
                 size={"lg"}
                 className={"bg-primary-600 hover:bg-primary-700 active:bg-primary-800"}
+                onPress={() => {
+                    // @ts-ignore
+                    navigation.navigate("Create");
+                }}
             >
                 <FabIcon as={AddIcon} color={"white"}/>
             </Fab>
+
+            {/* Alert */}
+            <AlertDialog
+                isOpen={showAlert}
+                onClose={() => {
+                    setShowAlert(false);
+                }}
+                size={"md"}
+            >
+                <AlertDialogBackdrop/>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <Heading className={"text-typography-950 font-semibold"} size={"md"}>
+                            {alertForm.title}
+                        </Heading>
+                    </AlertDialogHeader>
+                    <AlertDialogBody className={"mt-3 mb-4"}>
+                        <Text size={"sm"}>
+                            {alertForm.content}
+                        </Text>
+                    </AlertDialogBody>
+                    <AlertDialogFooter>
+                        <Button
+                            variant={"outline"}
+                            action={"secondary"}
+                            onPress={() => {
+                                if (alertForm.submit !== null) {
+                                    alertForm.submit();
+                                }
+                                setShowAlert(false);
+                            }}
+                            size={"sm"}
+                        >
+                            <ButtonText>확인</ButtonText>
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Box>
     );
 };

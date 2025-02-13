@@ -19,7 +19,8 @@
         "foregroundImage": "./assets/image/coco-icon.png",
         "backgroundColor": "#f5efcd"
       },
-      "package": "com.coco.rememberme"
+      "package": "com.coco.rememberme",
+      "permissions": ["READ_MEDIA_IMAGES", "CAMERA"]
     },
     "web": {
       "bundler": "metro",

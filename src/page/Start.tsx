@@ -14,7 +14,11 @@ const Start = () => {
             const storedToken = await getToken();
             if (storedToken) {
                 // @ts-ignore
-                navigation.navigate("Home");
+                navigation.reset({
+                    index: 0,
+                    // @ts-ignore
+                    routes: [{name: "Home"}]
+                });
             }
         };
         // noinspection JSIgnoredPromiseFromCall
@@ -37,7 +41,7 @@ const Start = () => {
                 <Text bold className={"text-typography-0 text-2xl"}>시작하기</Text>
             </Button>
             <Text className={"text-xl"}>
-                이미 계정이 있나요?{' '}
+                이미 계정이 있나요?{" "}
                 <Text
                     style={{color: "#ffaa00"}}
                     bold
