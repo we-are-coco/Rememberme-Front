@@ -134,3 +134,23 @@ export const saveImage = async (formData: any) => {
         return error.status;
     }
 };
+
+// 이미지 리스트 불러오기 API
+export const getImageList = async (): Promise<Item[] | number | null> => {
+    try {
+        const response = await axiosInstance.get(`/screenshot?page=1`);
+        console.log(`[getImageList] status: ${response.status}, `, response.data);
+        if (response.status === 200) {
+            return response.data.screenshots;
+        } else {
+            return null;
+        }
+    } catch (error: any) {
+        console.log(`[getImageList error] status: ${error.status}, `, error.response.data.detail);
+        if (error.status === 401) {
+            return error.status;
+        } else {
+            return null;
+        }
+    }
+};

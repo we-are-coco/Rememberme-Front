@@ -2,7 +2,7 @@ import {Text} from "@/src/components/ui/text";
 import {Box} from "@/src/components/ui/box";
 import {Button, ButtonText} from "@/src/components/ui/button";
 import {HStack} from "@/src/components/ui/hstack";
-import {FlatList, ScrollView} from "react-native";
+import {FlatList, RefreshControl, ScrollView} from "react-native";
 import {Input, InputField, InputIcon, InputSlot} from "@/src/components/ui/input";
 import {AddIcon, ChevronDownIcon, SearchIcon} from "@/src/components/ui/icon";
 import React, {useEffect, useState} from "react";
@@ -18,17 +18,15 @@ import {
     SelectPortal,
     SelectTrigger
 } from "@/src/components/ui/select";
-import data from "@/src/static/data/flatlist_test";
 import {Fab, FabIcon} from "@/src/components/ui/fab";
 import {VStack} from "@/src/components/ui/vstack";
 import {Heading} from "@/src/components/ui/heading";
-import {Card} from "@/src/components/ui/card";
 import {Pressable} from "@/src/components/ui/pressable";
 import {Ionicons} from "@expo/vector-icons";
 import {Image} from "@/src/components/ui/image";
 import {useNavigation} from "@react-navigation/native";
 import {getToken, removeToken} from '../services/AuthService';
-import {getCategoryList, getUser} from "@/src/api/api";
+import {getCategoryList, getImageList, getUser} from "@/src/api/api";
 import {
     AlertDialog,
     AlertDialogBackdrop,
@@ -37,7 +35,9 @@ import {
     AlertDialogFooter,
     AlertDialogHeader
 } from "@/src/components/ui/alert-dialog";
-import {Category, Item, AlertForm} from "@/src/utils/interfaceCase";
+import {AlertForm, Category, Item} from "@/src/utils/interfaceCase";
+import {Spinner} from "@/src/components/ui/spinner";
+import colors from "tailwindcss/colors";
 
 const Home = () => {
     const navigation = useNavigation();
@@ -49,18 +49,90 @@ const Home = () => {
     const [showAlert, setShowAlert] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [categoryList, setCategoryList] = useState<Category[] | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<string>("");
+    const [selectedCategory, setSelectedCategory] = useState<string>("all");
+    const [sortCase, setSortCase] = useState("valid");
+    const [imageList, setImageList] = useState<Item[]>([]);
+    const [refreshing, setRefreshing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const filteredData = () => {
-        return data.filter(item => item.title.toLowerCase().includes(searchText.toLowerCase()));
+        let filtering: Item[] = [...imageList];
+        // 만료 데이터 필터링
+        const now = new Date();
+        filtering = filtering.filter(item => (new Date(item.date + "T" + item.time)) >= now);
+        // 사용완료 데이터 필터링
+        filtering = filtering.filter(item => !item.is_used);
+        // 카테고리 필터링
+        if (selectedCategory !== "all") {
+            filtering = filtering.filter(item => item.category_id === selectedCategory);
+        }
+        // 검색어 필터링
+        filtering = filtering.filter(item => {
+            return (item.title !== null && item.title.toLowerCase().includes(searchText.toLowerCase()))
+                || (item.from_location !== null && item.from_location.toLowerCase().includes(searchText.toLowerCase()))
+                || (item.to_location !== null && item.to_location.toLowerCase().includes(searchText.toLowerCase()))
+                || (item.location !== null && item.location.toLowerCase().includes(searchText.toLowerCase()))
+                || (item.details !== null && item.details.toLowerCase().includes(searchText.toLowerCase()))
+                || (item.description !== null && item.description.toLowerCase().includes(searchText.toLowerCase()));
+        });
+        // 정렬
+        if (sortCase === "valid") {
+            filtering = filtering.sort((a, b) => {
+                const dateTimeA = new Date(`${a.date}T${a.time}`);
+                const dateTimeB = new Date(`${b.date}T${b.time}`);
+                return dateTimeA.getTime() - dateTimeB.getTime();
+            });
+        } else if (sortCase === "created") {
+            filtering = filtering.sort((a, b) => {
+                const dateTimeA = new Date(a.created_at);
+                const dateTimeB = new Date(b.created_at);
+                return dateTimeA.getTime() - dateTimeB.getTime();
+            });
+        }
+        return filtering;
     };
 
-    const onValueChangeSelect = (message: string) => {
-        alert(message);
+    const onValueChangeSelect = (sort: string) => {
+        setSortCase(sort);
     };
 
     const handleChangeCategory = (category: string) => {
         setSelectedCategory(category);
+    };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await fetchImageList();
+        setRefreshing(false);
+    };
+
+    const fetchImageList = async () => {
+        const responseData = await getImageList();
+        if (responseData === null) {
+            setAlertForm({
+                title: "리스트 로드 실패",
+                content: "리스트 로드에 실패했습니다. 앱을 재실행 해주세요.",
+                submit: null,
+            });
+            setShowAlert(true);
+        } else if (responseData === 401) {
+            setAlertForm({
+                title: "사용자 인증 실패",
+                content: "다시 로그인 해주세요.",
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else {
+            // @ts-ignore
+            setImageList(responseData);
+        }
     };
 
     useEffect(() => {
@@ -98,12 +170,41 @@ const Home = () => {
             const responseData = await getCategoryList();
 
             setCategoryList(responseData);
-            setSelectedCategory(responseData ? responseData[0].id : "");
+        };
+        const loadImageList = async () => {
+            const responseData = await getImageList();
+            if (responseData === null) {
+                setAlertForm({
+                    title: "리스트 로드 실패",
+                    content: "리스트 로드에 실패했습니다. 앱을 재실행 해주세요.",
+                    submit: null,
+                });
+                setShowAlert(true);
+            } else if (responseData === 401) {
+                setAlertForm({
+                    title: "사용자 인증 실패",
+                    content: "다시 로그인 해주세요.",
+                    submit: () => {
+                        // @ts-ignore
+                        navigation.reset({
+                            index: 0,
+                            // @ts-ignore
+                            routes: [{name: "Start"}]
+                        });
+                    },
+                });
+                setShowAlert(true);
+            } else {
+                // @ts-ignore
+                setImageList(responseData);
+            }
         };
         // noinspection JSIgnoredPromiseFromCall
         fetchToken();
         // noinspection JSIgnoredPromiseFromCall
         loadCategoryList();
+        // noinspection JSIgnoredPromiseFromCall
+        loadImageList();
     }, []);
 
     const renderItem = ({item}: { item: Item }) => {
@@ -123,21 +224,22 @@ const Home = () => {
             >
                 <HStack className={"flex w-full"}>
                     <Image
-                        source={{
-                            uri: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-                        }}
+                        source={{uri: `${item.url}?sv=2022-11-02&ss=b&srt=o&sp=r&se=2025-02-28T10:19:22Z&st=2025-02-14T02:19:22Z&spr=https&sig=eGOeTigdul7Kd8%2BXnz3XpR6DfNM1vQYwXowhmsTbvqk%3D`}}
                         alt={`img{item.id}`}
                         size={"xl"}
-                        // resizeMode={"contain"}
+                        className={"flex-0"}
+                        resizeMode={"contain"}
                     />
-                    <Card className={"flex-1"}>
-                        <Text size={"md"}>
-                            {categoryList?.find(category => category.id === item.category_id)?.name}
-                        </Text>
+                    <Box className={"flex-1"} style={{marginLeft: 10}}>
                         <VStack space={"xl"}>
-                            <Heading size={"lg"} className={"mb-4"}>
-                                {item.title}
-                            </Heading>
+                            <VStack>
+                                <Text size={"md"}>
+                                    {categoryList?.find(category => category.id === item.category_id)?.name}
+                                </Text>
+                                <Heading size={"lg"} className={"mb-4"}>
+                                    {item.title}
+                                </Heading>
+                            </VStack>
                             <HStack className={"flex items-center justify-between"}>
                                 <HStack space={"md"} className={"flex items-center justify-center"}>
                                     <Text size={"md"}>{item.date + " " + item.time}</Text>
@@ -152,7 +254,7 @@ const Home = () => {
                                 </Pressable>
                             </HStack>
                         </VStack>
-                    </Card>
+                    </Box>
                 </HStack>
             </Pressable>
         );
@@ -164,6 +266,19 @@ const Home = () => {
             <Box className={"p-2"}>
                 <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} className={"flex-shrink"}>
                     <HStack space={"md"} className={"p-2"}>
+                        <Button
+                            size={"md"}
+                            className={`rounded-full border ${selectedCategory !== "all" ? "bg-white" : ""}`}
+                            style={{minWidth: 75}}
+                            onPress={() => handleChangeCategory("all")}
+                        >
+                            <Text
+                                bold
+                                className={`${selectedCategory !== "all" ? "" : "text-typography-0"}`}
+                            >
+                                전체
+                            </Text>
+                        </Button>
                         {
                             categoryList && categoryList.map((item: Category) => (
                                 <Button
@@ -192,7 +307,7 @@ const Home = () => {
                 <Select
                     className={"flex-0"}
                     style={{minWidth: 100}}
-                    defaultValue={"유효기간 순"}
+                    defaultValue={"만료기간 순"}
                     onValueChange={onValueChangeSelect}
                 >
                     <SelectTrigger variant={"outline"} size={"md"}>
@@ -227,6 +342,9 @@ const Home = () => {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
                 className={"flex-1 p-2"}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>
+                }
             />
             <Fab
                 size={"lg"}
@@ -276,6 +394,16 @@ const Home = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Spinner */}
+            {
+                isLoading && (
+                    <Box className={"absolute w-full h-full"}>
+                        <Box className={"w-full h-full"} style={{opacity: 0.3, backgroundColor: "black"}}/>
+                        <Spinner size={"large"} color={colors.amber[600]} className={"absolute w-full h-full"}/>
+                    </Box>
+                )
+            }
         </Box>
     );
 };

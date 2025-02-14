@@ -23,6 +23,7 @@ export interface Item {
     code: string;
     created_at: string;
     updated_at: string;
+    is_used: boolean;
 }
 
 export interface FormData {
