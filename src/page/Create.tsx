@@ -34,7 +34,7 @@ import {
     SelectTrigger,
 } from "@/src/components/ui/select";
 import {CheckIcon, ChevronDownIcon} from "@/src/components/ui/icon";
-import {getCategoryList, getUser, uploadImage as uploadImageApi} from "@/src/api/api";
+import {getCategoryList, getUser, uploadImage as uploadImageApi, saveImage} from "@/src/api/api";
 import {Input, InputField} from "@/src/components/ui/input";
 import {DateTimePickerAndroid} from "@react-native-community/datetimepicker";
 import {Textarea, TextareaInput} from "@/src/components/ui/textarea";
@@ -204,7 +204,6 @@ const Create = () => {
 
         const responseData = await uploadImageApi(formData);
         if (responseData === null) {
-            console.log("여기??");
             setAlertForm({
                 title: "인식 실패",
                 content: "이미지 인식에 실패했습니다. 초기화 후 재시도 하시거나, 각 항목을 직접 입력해주세요.",
@@ -244,8 +243,142 @@ const Create = () => {
     };
 
     const saveDisabledCheck = () => {
+        let allowSave = false;
 
-    }
+        if (formData.category_id === null || formData.category_id === "") {
+            allowSave = true;
+        }
+        if (formData.date === null || formData.date === "") {
+            allowSave = true;
+        }
+        if (formData.time === null || formData.time === "") {
+            allowSave = true;
+        }
+        switch (categoryList?.find(item => item.id === selectedCategory)?.name) {
+            case "쿠폰":
+                if (formData.title === null || formData.title === "") {
+                    allowSave = true;
+                }
+                break;
+            case "교통":
+                if (formData.from_location === null || formData.from_location === "") {
+                    allowSave = true;
+                }
+                if (formData.to_location === null || formData.to_location === "") {
+                    allowSave = true;
+                }
+                break;
+            case "엔터테인먼트":
+                if (formData.title === null || formData.title === "") {
+                    allowSave = true;
+                }
+                if (formData.location === null || formData.location === "") {
+                    allowSave = true;
+                }
+                break;
+            case "약속":
+                if (formData.location === null || formData.location === "") {
+                    allowSave = true;
+                }
+                break;
+        }
+        if (isAlarm && alarms.length <= 0) {
+            allowSave = true;
+        }
+
+        return allowSave;
+    };
+
+    const subtractTime = (date: string, time: string, unit: string, value: number): string => {
+        const newDate = new Date(`${date}T${time}:00.000Z`);
+        switch (unit) {
+            case "month":
+                newDate.setMonth(newDate.getMonth() - value);
+                break;
+            case "week":
+                newDate.setDate(newDate.getDate() - value * 7);
+                break;
+            case "day":
+                newDate.setDate(newDate.getDate() - value);
+                break;
+            case "hour":
+                newDate.setHours(newDate.getHours() - value);
+                break;
+        }
+        return newDate.toISOString();
+    };
+
+    const saveContent = async () => {
+        setIsLoading(true);
+        let sendData = {...formData, notifications: [] as string[]};
+        if (isAlarm && alarms.length > 0) {
+            let notifications = [];
+            for (let i = 0; i < alarms.length; i++) {
+                switch (alarms[i]) {
+                    case "1month":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "month", 1));
+                        break;
+                    case "1week":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "week", 1));
+                        break;
+                    case "3day":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "day", 3));
+                        break;
+                    case "1day":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "day", 1));
+                        break;
+                    case "3hour":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "hour", 3));
+                        break;
+                    case "1hour":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "hour", 1));
+                        break;
+                }
+            }
+            sendData = {...sendData, notifications: notifications};
+        }
+        const replaceData = Object.fromEntries(Object.entries(sendData).map(([key, value]) => [key, value === "" ? null : value]));
+
+        const responseData = await saveImage(replaceData);
+        setIsLoading(false);
+        if (responseData === 201) {
+            setAlertForm({
+                title: "저장 성공",
+                content: "저장되었습니다.",
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Home"}]
+                    });
+                }
+            });
+            setShowAlert(true);
+        } else if (responseData === 401) {
+            await removeToken();
+            setAlertForm({
+                title: "사용자 인증 실패",
+                content: "다시 로그인 해주세요.",
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else {
+            setAlertForm({
+                title: "저장 실패",
+                content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                submit: null,
+            });
+            setShowAlert(true);
+        }
+    };
 
     useEffect(() => {
         const fetchToken = async () => {
@@ -384,6 +517,7 @@ const Create = () => {
                                             <InputField
                                                 type={"text"}
                                                 defaultValue={formData.date}
+                                                readOnly={true}
                                                 onPress={() => showDatePicker("date")}
                                             />
                                         </Input>
@@ -396,6 +530,7 @@ const Create = () => {
                                             <InputField
                                                 type={"text"}
                                                 defaultValue={formData.time}
+                                                readOnly={true}
                                                 onPress={() => showDatePicker("time")}
                                             />
                                         </Input>
@@ -720,7 +855,8 @@ const Create = () => {
                 </Pressable>
                 <Pressable
                     className={"flex-1 items-center justify-center bg-custom-orange p-4"}
-                    disabled={false}
+                    disabled={saveDisabledCheck()}
+                    onPress={saveContent}
                 >
                     <Text style={{color: "white"}} bold size={"3xl"}>저장</Text>
                 </Pressable>

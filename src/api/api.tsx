@@ -122,3 +122,15 @@ export const uploadImage = async (formData: any): Promise<Item | string | null> 
         }
     }
 };
+
+// 이미지 저장 API
+export const saveImage = async (formData: any) => {
+    try {
+        const response = await axiosInstance.post("/screenshot", JSON.stringify(formData));
+        console.log(`[saveImage] status: ${response.status}, `, response.data);
+        return response.status;
+    } catch (error: any) {
+        console.log(`[saveImage error] status: ${error.status}, `, error.response.data.detail);
+        return error.status;
+    }
+};
