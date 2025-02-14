@@ -154,3 +154,19 @@ export const getImageList = async (): Promise<Item[] | number | null> => {
         }
     }
 };
+
+// 이미지 삭제 API
+export const deleteImage = async (id: string): Promise<boolean | number> => {
+    try {
+        const response = await axiosInstance.delete(`/screenshot/${id}`);
+        console.log(`[deleteImage] status: ${response.status}, `, response.data);
+        return response.status === 204;
+    } catch (error: any) {
+        console.log(`[deleteImage error] status: ${error.status}, `, error.response.data.detail);
+        if (error.status === 401) {
+            return error.status;
+        } else {
+            return false;
+        }
+    }
+};
