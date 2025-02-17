@@ -27,6 +27,7 @@ const Settings = () => {
     const [alertForm, setAlertForm] = useState<AlertForm>({
         title: "",
         content: "",
+        showCancel: false,
         submit: null,
     });
     const [showAlert, setShowAlert] = useState(false);
@@ -41,6 +42,7 @@ const Settings = () => {
         setAlertForm({
             title: "로그아웃",
             content: "로그아웃 되었습니다. 시작화면으로 돌아갑니다.",
+            showCancel: false,
             submit: () => {
                 // @ts-ignore
                 navigation.reset({
@@ -71,6 +73,7 @@ const Settings = () => {
                     setAlertForm({
                         title: "사용자 인증 실패",
                         content: "다시 로그인 해주세요.",
+                        showCancel: false,
                         submit: () => {
                             // @ts-ignore
                             navigation.reset({

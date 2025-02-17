@@ -34,7 +34,7 @@ import {
     SelectTrigger,
 } from "@/src/components/ui/select";
 import {CheckIcon, ChevronDownIcon} from "@/src/components/ui/icon";
-import {getCategoryList, getUser, uploadImage as uploadImageApi, saveImage} from "@/src/api/api";
+import {getCategoryList, getUser, saveImage, uploadImage as uploadImageApi} from "@/src/api/api";
 import {Input, InputField} from "@/src/components/ui/input";
 import {DateTimePickerAndroid} from "@react-native-community/datetimepicker";
 import {Textarea, TextareaInput} from "@/src/components/ui/textarea";
@@ -56,6 +56,7 @@ const Create = () => {
     const [alertForm, setAlertForm] = useState<AlertForm>({
         title: "",
         content: "",
+        showCancel: false,
         submit: null,
     });
     const [showAlert, setShowAlert] = useState(false);
@@ -115,6 +116,7 @@ const Create = () => {
                 setAlertForm({
                     title: "권한 필요",
                     content: "앱 설정에서 카메라 권한을 변경해주세요.",
+                    showCancel: false,
                     submit: () => {
                         Linking.openSettings();
                     },
@@ -140,6 +142,7 @@ const Create = () => {
         setAlertForm({
             title: "초기화",
             content: "입력된 정보가 모두 초기화됩니다. 초기화 하시겠습니까?",
+            showCancel: true,
             submit: () => {
                 setImageUrl(null);
                 setFormData({
@@ -207,6 +210,7 @@ const Create = () => {
             setAlertForm({
                 title: "인식 실패",
                 content: "이미지 인식에 실패했습니다. 초기화 후 재시도 하시거나, 각 항목을 직접 입력해주세요.",
+                showCancel: false,
                 submit: null,
             });
             setShowAlert(true);
@@ -215,6 +219,7 @@ const Create = () => {
             setAlertForm({
                 title: "사용자 인증 실패",
                 content: "다시 로그인 해주세요.",
+                showCancel: false,
                 submit: () => {
                     // @ts-ignore
                     navigation.reset({
@@ -345,6 +350,7 @@ const Create = () => {
             setAlertForm({
                 title: "저장 성공",
                 content: "저장되었습니다.",
+                showCancel: false,
                 submit: () => {
                     // @ts-ignore
                     navigation.reset({
@@ -360,6 +366,7 @@ const Create = () => {
             setAlertForm({
                 title: "사용자 인증 실패",
                 content: "다시 로그인 해주세요.",
+                showCancel: false,
                 submit: () => {
                     // @ts-ignore
                     navigation.reset({
@@ -374,6 +381,7 @@ const Create = () => {
             setAlertForm({
                 title: "저장 실패",
                 content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                showCancel: false,
                 submit: null,
             });
             setShowAlert(true);
@@ -398,6 +406,7 @@ const Create = () => {
                     setAlertForm({
                         title: "사용자 인증 실패",
                         content: "다시 로그인 해주세요.",
+                        showCancel: false,
                         submit: () => {
                             // @ts-ignore
                             navigation.reset({
@@ -430,7 +439,14 @@ const Create = () => {
             <Box className={"flex-row items-center p-4"}>
                 <Pressable
                     style={{paddingRight: 20}}
-                    onPress={() => navigation.goBack()}
+                    onPress={() => {
+                        // @ts-ignore
+                        navigation.reset({
+                            index: 0,
+                            // @ts-ignore
+                            routes: [{name: "Home"}]
+                        });
+                    }}
                 >
                     <Ionicons name={"arrow-back"} size={24} color={"black"}/>
                 </Pressable>
@@ -473,8 +489,11 @@ const Create = () => {
                                         defaultValue={defaultCategory()}
                                     >
                                         <SelectTrigger>
-                                            <SelectInput value={defaultCategory()} placeholder={"카테고리를 선택하세요."}
-                                                         className={"flex-1"}/>
+                                            <SelectInput
+                                                value={defaultCategory()}
+                                                placeholder={"카테고리를 선택하세요."}
+                                                className={"flex-1"}
+                                            />
                                             <SelectIcon className={"mr-3"} as={ChevronDownIcon}/>
                                         </SelectTrigger>
                                         <SelectPortal>
@@ -516,8 +535,8 @@ const Create = () => {
                                         <Input className={"rounded-full"} size={"xl"}>
                                             <InputField
                                                 type={"text"}
-                                                defaultValue={formData.date}
-                                                readOnly={true}
+                                                value={formData.date}
+                                                onKeyPress={() => setFormData(prevState => ({...prevState}))}
                                                 onPress={() => showDatePicker("date")}
                                             />
                                         </Input>
@@ -529,8 +548,8 @@ const Create = () => {
                                         <Input className={"rounded-full"} size={"xl"}>
                                             <InputField
                                                 type={"text"}
-                                                defaultValue={formData.time}
-                                                readOnly={true}
+                                                value={formData.time}
+                                                onKeyPress={() => setFormData(prevState => ({...prevState}))}
                                                 onPress={() => showDatePicker("time")}
                                             />
                                         </Input>

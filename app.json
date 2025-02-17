@@ -20,7 +20,10 @@
         "backgroundColor": "#f5efcd"
       },
       "package": "com.coco.rememberme",
-      "permissions": ["READ_MEDIA_IMAGES", "CAMERA"]
+      "permissions": [
+        "READ_MEDIA_IMAGES",
+        "CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro",

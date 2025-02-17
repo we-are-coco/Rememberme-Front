@@ -48,6 +48,7 @@ const Register = () => {
     const [alertForm, setAlertForm] = useState<AlertForm>({
         title: "",
         content: "",
+        showCancel: false,
         submit: null,
     });
     const [showAlert, setShowAlert] = useState(false);
@@ -91,6 +92,7 @@ const Register = () => {
             setAlertForm({
                 title: "회원가입 실패",
                 content: "입력한 값들을 다시 확인해주세요.",
+                showCancel: false,
                 submit: null
             });
             setShowAlert(true);
@@ -103,6 +105,7 @@ const Register = () => {
             setAlertForm({
                 title: "회원가입 성공",
                 content: "회원가입 되었습니다. 로그인 해주세요.",
+                showCancel: false,
                 submit: () => {
                     // @ts-ignore
                     navigation.navigate("Login");
@@ -112,18 +115,21 @@ const Register = () => {
             setAlertForm({
                 title: "회원가입 실패",
                 content: "이미 존재하는 이메일입니다.",
+                showCancel: false,
                 submit: null
             });
         } else if (responseData === "fail") {
             setAlertForm({
                 title: "회원가입 실패",
                 content: "입력한 값들을 다시 확인해주세요.",
+                showCancel: false,
                 submit: null
             });
         } else {
             setAlertForm({
                 title: "회원가입 실패",
                 content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                showCancel: false,
                 submit: null
             });
         }
