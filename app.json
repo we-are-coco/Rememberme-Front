@@ -19,6 +19,7 @@
         "foregroundImage": "./assets/image/coco-icon.png",
         "backgroundColor": "#f5efcd"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.coco.rememberme",
       "permissions": ["READ_MEDIA_IMAGES", "CAMERA"]
     },
@@ -32,8 +33,6 @@
       }
     },
     "owner": "ms-coco",
-    "plugins": [
-      "expo-secure-store"
-    ]
+    "plugins": ["expo-secure-store"]
   }
 }
