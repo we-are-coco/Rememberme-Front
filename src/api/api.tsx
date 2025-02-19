@@ -3,6 +3,7 @@ import encodeAxiosInstance from "@/src/api/encodeAxiosInstance";
 import multipartAxiosInstance from "@/src/api/multipartAxiosInstance";
 import { saveToken } from "@/src/services/AuthService";
 import { Category, Item } from "@/src/utils/interfaceCase";
+import { initializeFCM } from "../services/FcmService";
 
 // 테스트 API
 export const testHello = async () => {
@@ -58,6 +59,8 @@ export const login = async (formData: any) => {
     if (response.status === 200) {
       const { access_token } = response.data;
       await saveToken(access_token);
+      // 로그인 후 FCM 초기화 (토큰 가져와서 서버에 전송)
+      await initializeFCM();
       return "success";
     } else {
       return "error";

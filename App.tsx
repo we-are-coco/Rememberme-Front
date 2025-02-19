@@ -12,19 +12,13 @@ import Register from "@/src/page/Register";
 import Login from "@/src/page/Login";
 import Create from "@/src/page/Create";
 import Detail from "@/src/page/Detail";
-import {
-  initializeFCM,
-  setupNotificationListeners,
-  setupBackgroundNotificationHandler,
-} from "@/src/services/FcmService";
+import { initializeFCM } from "@/src/services/FcmService";
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
   useEffect(() => {
     initializeFCM(); // FCM 초기화 실행
-    setupNotificationListeners(); // 푸시 알림 리스너 등록
-    setupBackgroundNotificationHandler(); // 백그라운드 메시지 핸들러 등록
   }, []);
 
   return (

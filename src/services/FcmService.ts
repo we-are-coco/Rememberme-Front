@@ -3,6 +3,7 @@ import messaging from "@react-native-firebase/messaging";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import { sendFCMTokenToBackend } from "@/src/api/api";
+import { getToken } from "@/src/services/AuthService";
 
 // 🔹 알림 핸들러 설정 (앱이 실행 중일 때 알림을 표시)
 Notifications.setNotificationHandler({
@@ -13,27 +14,27 @@ Notifications.setNotificationHandler({
   }),
 });
 
+let isBackgroundHandlerSet = false; // 백그라운드 핸들러 등록 여부
+
 // 🔹 알림 권한 요청 및 FCM 토큰 가져오기
 export const initializeFCM = async () => {
-  if (!Device.isDevice) {
-    console.log("❌ 실제 기기에서만 푸시 알림을 사용할 수 있습니다.");
-    return;
-  }
-
-  const { status } = await Notifications.requestPermissionsAsync();
-  if (status !== "granted") {
-    console.log("❌ 알림 권한이 거부되었습니다.");
-    return;
-  }
-  console.log("🔑 알림 권한이 허용되었습니다.");
-
   try {
+    const hasPermission = await requestNotificationPermissions();
+    if (!hasPermission) {
+      console.log("❌ FCM 초기화 중단: 알림 권한 없음.");
+      return;
+    }
     // 🔥 FCM 토큰 가져오기
-    const fcmToken = await messaging().getToken();
-    console.log("🔥 FCM 토큰:", fcmToken); // 이 토큰을 서버에 저장해야 푸시 알림이 정상적으로 수신됨
+    const fcmToken = await getFCMToken();
     if (fcmToken) {
       // FCM 토큰을 서버로 전송
       await sendFCMTokenToBackend(fcmToken);
+    }
+    // ✅ 푸시 알림 리스너 & 백그라운드 핸들러 등록
+    setupNotificationListeners();
+    if (!isBackgroundHandlerSet) {
+      // 백그라운드 핸들러는 처음 한 번만 실행되면 됨
+      setupBackgroundNotificationHandler();
     }
   } catch (error) {
     console.error("❌ FCM 토큰 가져오기 실패:", error);
@@ -50,10 +51,57 @@ export const initializeFCM = async () => {
   }
 };
 
-// 📌 푸시 알림 리스너 설정
+// 권한 요청 함수
+export const requestNotificationPermissions = async (): Promise<boolean> => {
+  if (!Device.isDevice) {
+    console.log("❌ 실제 기기에서만 푸시 알림을 사용할 수 있습니다.");
+    return false;
+  }
+
+  const { status: currentStatus } = await Notifications.getPermissionsAsync();
+  if (currentStatus === "granted") {
+    console.log("✅ 알림 권한이 이미 허용됨.");
+    return true;
+  }
+
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== "granted") {
+    console.log("❌ 알림 권한이 거부되었습니다.");
+    return false;
+  }
+
+  console.log("🔑 알림 권한이 새로 허용되었습니다.");
+  return true;
+};
+
+/**
+ * 📌 FCM 토큰 가져오는 함수
+ */
+export const getFCMToken = async (): Promise<string | null> => {
+  try {
+    const authToken = await getToken(); // 로그인된 사용자 토큰 확인
+    if (authToken) {
+      const fcmToken = await messaging().getToken();
+      console.log("🔥 [getFCMToken] FCM 토큰:", fcmToken);
+      return fcmToken;
+    } else {
+      console.log("🔹 로그인되지 않음: FCM 토큰을 서버로 보내지 않음.");
+      return null;
+    }
+  } catch (error) {
+    console.error("❌ [getFCMToken] FCM 토큰 가져오기 실패:", error);
+    return null;
+  }
+};
+
+let messageListener: (() => void) | null = null; // 기존 리스너 저장 변수
+
 export const setupNotificationListeners = () => {
-  // ✅ 앱이 실행 중일 때(Foreground) 푸시 알림 표시
-  messaging().onMessage(async (remoteMessage) => {
+  if (messageListener) {
+    messageListener(); // 기존 리스너 제거
+  }
+
+  messageListener = messaging().onMessage(async (remoteMessage) => {
     console.log("📩 FCM 푸시 알림 수신:", remoteMessage);
 
     await Notifications.scheduleNotificationAsync({
@@ -77,4 +125,6 @@ export const setupBackgroundNotificationHandler = () => {
   messaging().setBackgroundMessageHandler(async (remoteMessage) => {
     console.log("📩 [백그라운드] FCM 메시지 수신:", remoteMessage);
   });
+
+  isBackgroundHandlerSet = true; // 등록 완료 플래그 설정
 };
