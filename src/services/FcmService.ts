@@ -4,6 +4,7 @@ import * as Device from "expo-device";
 import { Platform } from "react-native";
 import { sendFCMTokenToBackend } from "@/src/api/api";
 import { getToken } from "@/src/services/AuthService";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 // 🔹 알림 핸들러 설정 (앱이 실행 중일 때 알림을 표시)
 Notifications.setNotificationHandler({
@@ -127,4 +128,14 @@ export const setupBackgroundNotificationHandler = () => {
   });
 
   isBackgroundHandlerSet = true; // 등록 완료 플래그 설정
+};
+
+export const deleteFCMToken = async () => {
+  try {
+    await messaging().deleteToken();
+    await sendFCMTokenToBackend(null);
+    console.log("✅ FCM 토큰이 로컬에서 삭제되었습니다.");
+  } catch (error) {
+    console.error("❌ FCM 토큰 삭제 실패:", error);
+  }
 };

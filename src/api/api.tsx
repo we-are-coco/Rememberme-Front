@@ -206,11 +206,11 @@ export const deleteImage = async (id: string): Promise<number> => {
 };
 
 // FCM 토큰을 백엔드로 전송하는 함수
-export const sendFCMTokenToBackend = async (fcmToken: string) => {
+export const sendFCMTokenToBackend = async (fcmToken: string | null) => {
   try {
     const response = await axiosInstance.put(
       "/users", // 서버에서 처리할 엔드포인트 (예: 사용자의 FCM 토큰 업데이트)
-      { fcm_token: fcmToken } // 전송할 FCM 토큰
+      { fcm_token: fcmToken || "" } // 전송할 FCM 토큰
     );
 
     if (response.status === 200) {
