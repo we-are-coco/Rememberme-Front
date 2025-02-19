@@ -19,12 +19,9 @@
         "foregroundImage": "./assets/image/coco-icon.png",
         "backgroundColor": "#f5efcd"
       },
-      "googleServicesFile": "./google-services.json",
+      "googleServicesFile": "./.eas/.env/GOOGLE_SERVICES_JSON",
       "package": "com.coco.rememberme",
-      "permissions": [
-        "READ_MEDIA_IMAGES",
-        "CAMERA"
-      ]
+      "permissions": ["READ_MEDIA_IMAGES", "CAMERA"]
     },
     "web": {
       "bundler": "metro",

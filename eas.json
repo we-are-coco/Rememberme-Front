@@ -9,18 +9,27 @@
       "distribution": "internal",
       "android": {
         "gradleCommand": ":app:assembleDebug"
+      },
+      "env": {
+        "FIREBASE_CREDENTIALS": "@google-services.json"
       }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "FIREBASE_CREDENTIALS": "@google-services.json"
       }
     },
     "production": {
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "FIREBASE_CREDENTIALS": "@google-services.json"
       }
     }
   },
