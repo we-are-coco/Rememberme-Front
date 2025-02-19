@@ -175,7 +175,8 @@ module.exports = {
                 },
                 custom: {
                     orange: '#ffaa00',
-                    beige: '#f5efcd'
+                    beige: '#f5efcd',
+                    red: '#de0e0e',
                 }
             },
             fontFamily: {

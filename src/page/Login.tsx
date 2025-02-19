@@ -31,6 +31,7 @@ const Login = () => {
     const [alertForm, setAlertForm] = useState<AlertForm>({
         title: "",
         content: "",
+        showCancel: false,
         submit: null,
     });
     const [showAlert, setShowAlert] = useState(false);
@@ -53,12 +54,14 @@ const Login = () => {
             setAlertForm({
                 title: "로그인 실패",
                 content: "아이디 또는 비밀번호를 확인해주세요.",
+                showCancel: false,
                 submit: null
             });
         } else {
             setAlertForm({
                 title: "로그인 실패",
                 content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                showCancel: false,
                 submit: null
             });
         }

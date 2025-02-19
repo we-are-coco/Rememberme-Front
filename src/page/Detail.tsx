@@ -4,7 +4,7 @@ import {Ionicons} from "@expo/vector-icons";
 import {Text} from "@/src/components/ui/text";
 import React, {useEffect, useState} from "react";
 import {getToken, removeToken} from "@/src/services/AuthService";
-import {getCategoryList, getUser} from "@/src/api/api";
+import {deleteImage as deleteImageApi, getCategoryList, getUser, saveImage} from "@/src/api/api";
 import {useNavigation} from "@react-navigation/native";
 import {
     AlertDialog,
@@ -33,36 +33,52 @@ import {
     SelectPortal,
     SelectTrigger
 } from "@/src/components/ui/select";
-import {ChevronDownIcon} from "@/src/components/ui/icon";
+import {CheckIcon, ChevronDownIcon} from "@/src/components/ui/icon";
 import {Input, InputField} from "@/src/components/ui/input";
 import {Textarea, TextareaInput} from "@/src/components/ui/textarea";
 import {DateTimePickerAndroid} from "@react-native-community/datetimepicker";
-import {Category, FormData, AlertForm, Item} from "@/src/utils/interfaceCase";
+import {Category, AlertForm, Item} from "@/src/utils/interfaceCase";
+import {Spinner} from "@/src/components/ui/spinner";
+import colors from "tailwindcss/colors";
+import {Switch} from "@/src/components/ui/switch";
+import {Checkbox, CheckboxGroup, CheckboxIcon, CheckboxIndicator, CheckboxLabel} from "@/src/components/ui/checkbox";
 
 const Detail = (item: Item) => {
     const navigation = useNavigation();
     const [alertForm, setAlertForm] = useState<AlertForm>({
         title: "",
         content: "",
+        showCancel: false,
         submit: null,
     });
     const [showAlert, setShowAlert] = useState(false);
     const [categoryList, setCategoryList] = useState<Category[] | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>(item.category_id);
-    const [formData, setFormData] = useState<FormData>({
+    const [formData, setFormData] = useState<Item>({
+        id: "",
+        user_id: "",
+        title: "",
         category_id: "",
-        type: "",
-        date: "",
-        time: "",
         description: "",
         brand: "",
-        title: "",
-        code: "",
+        type: "",
+        url: "",
+        date: "",
+        time: "",
         from_location: "",
         to_location: "",
         location: "",
         details: "",
+        start_date: "",
+        end_date: "",
+        code: "",
+        created_at: "",
+        updated_at: "",
+        is_used: false,
     });
+    const [isLoading, setIsLoading] = useState(false);
+    const [isAlarm, setIsAlarm] = useState(false);
+    const [alarms, setAlarms] = useState<string[]>([]);
 
     const handleChangeCategory = (category: string) => {
         setSelectedCategory(category);
@@ -93,6 +109,208 @@ const Detail = (item: Item) => {
         setFormData(prevState => ({...prevState, time: timePart}));
     };
 
+    const defaultCategory = () => {
+        return categoryList?.find(item => item.id === selectedCategory)?.name;
+    };
+
+    const saveDisabledCheck = () => {
+        let allowSave = false;
+
+        if (formData.category_id === null || formData.category_id === "") {
+            allowSave = true;
+        }
+        if (formData.date === null || formData.date === "") {
+            allowSave = true;
+        }
+        if (formData.time === null || formData.time === "") {
+            allowSave = true;
+        }
+        switch (categoryList?.find(item => item.id === selectedCategory)?.name) {
+            case "쿠폰":
+                if (formData.title === null || formData.title === "") {
+                    allowSave = true;
+                }
+                break;
+            case "교통":
+                if (formData.from_location === null || formData.from_location === "") {
+                    allowSave = true;
+                }
+                if (formData.to_location === null || formData.to_location === "") {
+                    allowSave = true;
+                }
+                break;
+            case "엔터테인먼트":
+                if (formData.title === null || formData.title === "") {
+                    allowSave = true;
+                }
+                if (formData.location === null || formData.location === "") {
+                    allowSave = true;
+                }
+                break;
+            case "약속":
+                if (formData.location === null || formData.location === "") {
+                    allowSave = true;
+                }
+                break;
+        }
+        if (isAlarm && alarms.length <= 0) {
+            allowSave = true;
+        }
+
+        return allowSave;
+    };
+
+    const subtractTime = (date: string, time: string, unit: string, value: number): string => {
+        const newDate = new Date(`${date}T${time}:00.000Z`);
+        switch (unit) {
+            case "month":
+                newDate.setMonth(newDate.getMonth() - value);
+                break;
+            case "week":
+                newDate.setDate(newDate.getDate() - value * 7);
+                break;
+            case "day":
+                newDate.setDate(newDate.getDate() - value);
+                break;
+            case "hour":
+                newDate.setHours(newDate.getHours() - value);
+                break;
+        }
+        return newDate.toISOString();
+    };
+
+    const saveContent = async () => {
+        setIsLoading(true);
+        let sendData = {...formData, notifications: [] as string[]};
+        if (isAlarm && alarms.length > 0) {
+            let notifications = [];
+            for (let i = 0; i < alarms.length; i++) {
+                switch (alarms[i]) {
+                    case "1month":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "month", 1));
+                        break;
+                    case "1week":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "week", 1));
+                        break;
+                    case "3day":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "day", 3));
+                        break;
+                    case "1day":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "day", 1));
+                        break;
+                    case "3hour":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "hour", 3));
+                        break;
+                    case "1hour":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "hour", 1));
+                        break;
+                }
+            }
+            sendData = {...sendData, notifications: notifications};
+        }
+        const replaceData = Object.fromEntries(Object.entries(sendData).map(([key, value]) => [key, value === "" ? null : value]));
+
+        const responseData = await saveImage(replaceData);
+        setIsLoading(false);
+        if (responseData === 201) {
+            setAlertForm({
+                title: "저장 성공",
+                content: "저장되었습니다.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Home"}]
+                    });
+                }
+            });
+            setShowAlert(true);
+        } else if (responseData === 401) {
+            await removeToken();
+            setAlertForm({
+                title: "사용자 인증 실패",
+                content: "다시 로그인 해주세요.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else {
+            setAlertForm({
+                title: "저장 실패",
+                content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                showCancel: false,
+                submit: null,
+            });
+            setShowAlert(true);
+        }
+    };
+
+    const deleteConfirm = (id: string) => {
+        setAlertForm({
+            title: "삭제 여부 확인",
+            content: "정말 삭제하시겠습니까?",
+            showCancel: true,
+            submit: () => {
+                // noinspection JSIgnoredPromiseFromCall
+                deleteImage(id);
+            },
+        });
+        setShowAlert(true);
+    };
+
+    const deleteImage = async (id: string) => {
+        console.log(`[deleteImage]: ${id}`);
+        const responseData = await deleteImageApi(id);
+        if (responseData === 204) {
+            setAlertForm({
+                title: "삭제 성공",
+                content: "삭제 되었습니다.",
+                showCancel: false,
+                submit: async () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Home"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else if (responseData === 401) {
+            setAlertForm({
+                title: "사용자 인증 실패",
+                content: "다시 로그인 해주세요.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else {
+            setAlertForm({
+                title: "삭제 실패",
+                content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                showCancel: false,
+                submit: null,
+            });
+            setShowAlert(true);
+        }
+    };
+
     useEffect(() => {
         const fetchToken = async () => {
             const storedToken = await getToken();
@@ -111,6 +329,7 @@ const Detail = (item: Item) => {
                     setAlertForm({
                         title: "사용자 인증 실패",
                         content: "다시 로그인 해주세요.",
+                        showCancel: false,
                         submit: () => {
                             // @ts-ignore
                             navigation.reset({
@@ -129,6 +348,30 @@ const Detail = (item: Item) => {
 
             setCategoryList(responseData);
         };
+
+        // @ts-ignore
+        if (!item.route.params.item) {
+            setAlertForm({
+                title: "데이터 로드 실패",
+                content: "존재하지 않는 데이터 입니다.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Home"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else {
+            // @ts-ignore
+            setFormData(prevState => ({...prevState, ...item.route.params.item}));
+            // @ts-ignore
+            setSelectedCategory(item.route.params.item.category_id);
+        }
+
         // noinspection JSIgnoredPromiseFromCall
         fetchToken();
         // noinspection JSIgnoredPromiseFromCall
@@ -146,7 +389,7 @@ const Detail = (item: Item) => {
                     <Ionicons name={"arrow-back"} size={24} color={"black"}/>
                 </Pressable>
                 <Text size={"2xl"} bold={true}>
-                    쿠폰/티켓 등록
+                    쿠폰/티켓 상세
                 </Text>
             </Box>
 
@@ -154,9 +397,7 @@ const Detail = (item: Item) => {
             <ScrollView showsVerticalScrollIndicator={false} className={"flex-shrink"}>
                 <Box className={"items-center justify-center p-6"}>
                     <Image
-                        source={{
-                            uri: item.url,
-                        }}
+                        source={{uri: `${formData.url}?sv=2022-11-02&ss=b&srt=o&sp=r&se=2025-02-28T10:19:22Z&st=2025-02-14T02:19:22Z&spr=https&sig=eGOeTigdul7Kd8%2BXnz3XpR6DfNM1vQYwXowhmsTbvqk%3D`}}
                         alt={"image"}
                         size={"2xl"}
                         resizeMode={"contain"}
@@ -180,11 +421,15 @@ const Detail = (item: Item) => {
                         </FormControlLabel>
                         <Select
                             onValueChange={handleChangeCategory}
-                            defaultValue={categoryList?.find(item => item.id === selectedCategory)?.name}
+                            defaultValue={defaultCategory()}
                         >
                             <SelectTrigger>
-                                <SelectInput placeholder={"카테고리를 선택하세요."} className={"flex-1"}/>
-                                <SelectIcon className={"mr-3"} as={ChevronDownIcon}/>
+                                <SelectInput
+                                    value={defaultCategory()}
+                                    placeholder={"카테고리를 선택하세요."}
+                                    className={"flex-1"}/>
+                                <SelectIcon className={"mr-3"} as={ChevronDownIcon}
+                                />
                             </SelectTrigger>
                             <SelectPortal>
                                 <SelectBackdrop/>
@@ -213,6 +458,7 @@ const Detail = (item: Item) => {
                                 onChangeText={(type) => {
                                     handleChangeForm("type", type);
                                 }}
+                                defaultValue={formData.type}
                             />
                         </Input>
                     </FormControl>
@@ -224,7 +470,8 @@ const Detail = (item: Item) => {
                             <Input className={"rounded-full"} size={"xl"}>
                                 <InputField
                                     type={"text"}
-                                    defaultValue={formData.date}
+                                    value={formData.date}
+                                    onKeyPress={() => setFormData(prevState => ({...prevState}))}
                                     onPress={() => showDatePicker("date")}
                                 />
                             </Input>
@@ -236,7 +483,8 @@ const Detail = (item: Item) => {
                             <Input className={"rounded-full"} size={"xl"}>
                                 <InputField
                                     type={"text"}
-                                    defaultValue={formData.time}
+                                    value={formData.time}
+                                    onKeyPress={() => setFormData(prevState => ({...prevState}))}
                                     onPress={() => showDatePicker("time")}
                                 />
                             </Input>
@@ -257,6 +505,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(brand) => {
                                                 handleChangeForm("brand", brand);
                                             }}
+                                            defaultValue={formData.brand}
                                         />
                                     </Input>
                                 </FormControl>
@@ -272,6 +521,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(title) => {
                                                 handleChangeForm("title", title);
                                             }}
+                                            defaultValue={formData.title}
                                         />
                                     </Input>
                                 </FormControl>
@@ -287,6 +537,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(code) => {
                                                 handleChangeForm("code", code);
                                             }}
+                                            defaultValue={formData.code}
                                         />
                                     </Input>
                                 </FormControl>
@@ -308,6 +559,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(from_location) => {
                                                 handleChangeForm("from_location", from_location);
                                             }}
+                                            defaultValue={formData.from_location}
                                         />
                                     </Input>
                                 </FormControl>
@@ -323,6 +575,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(to_location) => {
                                                 handleChangeForm("to_location", to_location);
                                             }}
+                                            defaultValue={formData.to_location}
                                         />
                                     </Input>
                                 </FormControl>
@@ -344,6 +597,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(title) => {
                                                 handleChangeForm("title", title);
                                             }}
+                                            defaultValue={formData.title}
                                         />
                                     </Input>
                                 </FormControl>
@@ -359,6 +613,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(location) => {
                                                 handleChangeForm("location", location);
                                             }}
+                                            defaultValue={formData.location}
                                         />
                                     </Input>
                                 </FormControl>
@@ -380,6 +635,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(location) => {
                                                 handleChangeForm("location", location);
                                             }}
+                                            defaultValue={formData.location}
                                         />
                                     </Input>
                                 </FormControl>
@@ -400,6 +656,7 @@ const Detail = (item: Item) => {
                                             onChangeText={(details) => {
                                                 handleChangeForm("details", details);
                                             }}
+                                            defaultValue={formData.details}
                                         />
                                     </Textarea>
                                 </FormControl>
@@ -423,20 +680,132 @@ const Detail = (item: Item) => {
                                 onChangeText={(description) => {
                                     handleChangeForm("description", description);
                                 }}
+                                defaultValue={formData.description}
                             />
                         </Textarea>
                     </FormControl>
+                    <FormControl
+                        className={"w-full"}
+                    >
+                        <FormControlLabel>
+                            <FormControlLabelText>알람</FormControlLabelText>
+                        </FormControlLabel>
+                        <HStack className={"w-full"}>
+                            <Switch
+                                defaultValue={isAlarm}
+                                value={isAlarm}
+                                onValueChange={(value) => {
+                                    setIsAlarm(value);
+                                    setAlarms([]);
+                                }}
+                                trackColor={{false: colors.gray[300], true: colors.amber[300]}}
+                                thumbColor={colors.amber[500]}
+                            />
+                        </HStack>
+                    </FormControl>
+                    {
+                        isAlarm && (
+                            <CheckboxGroup
+                                value={alarms}
+                                onChange={(keys) => {
+                                    setAlarms(keys);
+                                }}
+                            >
+                                <VStack space="md">
+                                    {
+                                        ["쿠폰", "기타"].includes(categoryList?.find(item => item.id === selectedCategory)?.name as string) && (
+                                            <Checkbox value="1month">
+                                                <CheckboxIndicator>
+                                                    <CheckboxIcon as={CheckIcon}/>
+                                                </CheckboxIndicator>
+                                                <CheckboxLabel>한달 전</CheckboxLabel>
+                                            </Checkbox>
+                                        )
+                                    }
+                                    {
+                                        ["쿠폰", "약속", "기타"].includes(categoryList?.find(item => item.id === selectedCategory)?.name as string) && (
+                                            <Checkbox value="1week">
+                                                <CheckboxIndicator>
+                                                    <CheckboxIcon as={CheckIcon}/>
+                                                </CheckboxIndicator>
+                                                <CheckboxLabel>일주일 전</CheckboxLabel>
+                                            </Checkbox>
+                                        )
+                                    }
+                                    {
+                                        ["쿠폰", "엔터테인먼트", "약속", "기타"].includes(categoryList?.find(item => item.id === selectedCategory)?.name as string) && (
+                                            <Checkbox value="3day">
+                                                <CheckboxIndicator>
+                                                    <CheckboxIcon as={CheckIcon}/>
+                                                </CheckboxIndicator>
+                                                <CheckboxLabel>3일 전</CheckboxLabel>
+                                            </Checkbox>
+                                        )
+                                    }
+                                    {
+                                        ["교통", "엔터테인먼트", "약속"].includes(categoryList?.find(item => item.id === selectedCategory)?.name as string) && (
+                                            <Checkbox value="1day">
+                                                <CheckboxIndicator>
+                                                    <CheckboxIcon as={CheckIcon}/>
+                                                </CheckboxIndicator>
+                                                <CheckboxLabel>하루 전</CheckboxLabel>
+                                            </Checkbox>
+                                        )
+                                    }
+                                    {
+                                        ["교통"].includes(categoryList?.find(item => item.id === selectedCategory)?.name as string) && (
+                                            <Checkbox value="3hour">
+                                                <CheckboxIndicator>
+                                                    <CheckboxIcon as={CheckIcon}/>
+                                                </CheckboxIndicator>
+                                                <CheckboxLabel>3시간 전</CheckboxLabel>
+                                            </Checkbox>
+                                        )
+                                    }
+                                    {
+                                        ["교통", "엔터테인먼트"].includes(categoryList?.find(item => item.id === selectedCategory)?.name as string) && (
+                                            <Checkbox value="1hour">
+                                                <CheckboxIndicator>
+                                                    <CheckboxIcon as={CheckIcon}/>
+                                                </CheckboxIndicator>
+                                                <CheckboxLabel>1시간 전</CheckboxLabel>
+                                            </Checkbox>
+                                        )
+                                    }
+                                </VStack>
+                            </CheckboxGroup>
+                        )
+                    }
                 </VStack>
             </ScrollView>
 
             {/* Footer */}
-            <HStack space={"md"} className={"border-t"} style={{borderColor: "#ffaa00"}}>
-                <Pressable
-                    className={"flex-1 items-center justify-center bg-custom-orange p-4"}
-                >
-                    <Text style={{color: "white"}} bold size={"3xl"}>저장</Text>
-                </Pressable>
-            </HStack>
+            <VStack space={"xs"} className={"border-t"} style={{borderColor: "#ffaa00"}}>
+                <HStack space={"md"}>
+                    <Pressable
+                        className={"flex-1 items-center justify-center bg-custom-orange p-4"}
+                        disabled={saveDisabledCheck()}
+                        onPress={saveContent}
+                    >
+                        <Text style={{color: "white"}} bold size={"3xl"}>변경사항 저장</Text>
+                    </Pressable>
+                </HStack>
+                <HStack>
+                    <Pressable
+                        className={"flex-1 items-center justify-center bg-custom-beige p-4"}
+                        disabled={saveDisabledCheck()}
+                        onPress={saveContent}
+                    >
+                        <Text style={{color: "black"}} bold size={"3xl"}>사용 완료</Text>
+                    </Pressable>
+                    <Pressable
+                        className={"flex-1 items-center justify-center bg-custom-red p-4"}
+                        onPress={() => deleteConfirm(formData.id)}
+                    >
+                        <Text style={{color: "white"}} bold size={"3xl"}>삭제</Text>
+                    </Pressable>
+                </HStack>
+            </VStack>
 
             {/* Alert */}
             <AlertDialog
@@ -459,9 +828,21 @@ const Detail = (item: Item) => {
                         </Text>
                     </AlertDialogBody>
                     <AlertDialogFooter>
+                        {
+                            alertForm.showCancel && (
+                                <Button
+                                    variant={"outline"}
+                                    action={"secondary"}
+                                    onPress={() => setShowAlert(false)}
+                                    size={"sm"}
+                                >
+                                    <ButtonText>취소</ButtonText>
+                                </Button>
+                            )
+                        }
                         <Button
                             variant={"outline"}
-                            action={"secondary"}
+                            action={"primary"}
                             onPress={() => {
                                 if (alertForm.submit !== null) {
                                     alertForm.submit();
@@ -475,6 +856,16 @@ const Detail = (item: Item) => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Spinner */}
+            {
+                isLoading && (
+                    <Box className={"absolute w-full h-full"}>
+                        <Box className={"w-full h-full"} style={{opacity: 0.3, backgroundColor: "black"}}/>
+                        <Spinner size={"large"} color={colors.amber[600]} className={"absolute w-full h-full"}/>
+                    </Box>
+                )
+            }
         </Box>
     );
 };

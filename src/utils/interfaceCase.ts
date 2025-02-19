@@ -44,6 +44,7 @@ export interface FormData {
 export interface AlertForm {
     title: string;
     content: string;
+    showCancel: boolean;
     submit: any;
 }
 
