@@ -928,6 +928,18 @@ const Create = () => {
                         </Text>
                     </AlertDialogBody>
                     <AlertDialogFooter>
+                        {
+                            alertForm.showCancel && (
+                                <Button
+                                    variant={"outline"}
+                                    action={"secondary"}
+                                    onPress={() => setShowAlert(false)}
+                                    size={"sm"}
+                                >
+                                    <ButtonText>취소</ButtonText>
+                                </Button>
+                            )
+                        }
                         <Button
                             variant={"outline"}
                             action={"secondary"}

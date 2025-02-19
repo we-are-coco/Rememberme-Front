@@ -4,7 +4,7 @@ import {Ionicons} from "@expo/vector-icons";
 import {Text} from "@/src/components/ui/text";
 import React, {useEffect, useState} from "react";
 import {getToken, removeToken} from "@/src/services/AuthService";
-import {deleteImage as deleteImageApi, getCategoryList, getUser, saveImage} from "@/src/api/api";
+import {deleteImage as deleteImageApi, getCategoryList, getImage, getUser, updateImage, isUsedUpdate} from "@/src/api/api";
 import {useNavigation} from "@react-navigation/native";
 import {
     AlertDialog,
@@ -37,7 +37,7 @@ import {CheckIcon, ChevronDownIcon} from "@/src/components/ui/icon";
 import {Input, InputField} from "@/src/components/ui/input";
 import {Textarea, TextareaInput} from "@/src/components/ui/textarea";
 import {DateTimePickerAndroid} from "@react-native-community/datetimepicker";
-import {Category, AlertForm, Item} from "@/src/utils/interfaceCase";
+import {AlertForm, Category, Item} from "@/src/utils/interfaceCase";
 import {Spinner} from "@/src/components/ui/spinner";
 import colors from "tailwindcss/colors";
 import {Switch} from "@/src/components/ui/switch";
@@ -179,6 +179,53 @@ const Detail = (item: Item) => {
         return newDate.toISOString();
     };
 
+    const completeContent = async () => {
+        setIsLoading(true);
+        const responseData = await isUsedUpdate(formData.id, !formData.is_used);
+
+        if (responseData === 401) {
+            await removeToken();
+            setAlertForm({
+                title: "사용자 인증 실패",
+                content: "다시 로그인 해주세요.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else if (responseData) {
+            setAlertForm({
+                title: "저장 성공",
+                content: "사용완료/취소 되었습니다.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Home"}]
+                    });
+                }
+            });
+            setShowAlert(true);
+        } else {
+            setAlertForm({
+                title: "처리 실패",
+                content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                showCancel: false,
+                submit: null,
+            });
+            setShowAlert(true);
+        }
+        setIsLoading(false);
+    };
+
     const saveContent = async () => {
         setIsLoading(true);
         let sendData = {...formData, notifications: [] as string[]};
@@ -210,9 +257,9 @@ const Detail = (item: Item) => {
         }
         const replaceData = Object.fromEntries(Object.entries(sendData).map(([key, value]) => [key, value === "" ? null : value]));
 
-        const responseData = await saveImage(replaceData);
+        const responseData = await updateImage(replaceData);
         setIsLoading(false);
-        if (responseData === 201) {
+        if (responseData === 200) {
             setAlertForm({
                 title: "저장 성공",
                 content: "저장되었습니다.",
@@ -268,7 +315,6 @@ const Detail = (item: Item) => {
     };
 
     const deleteImage = async (id: string) => {
-        console.log(`[deleteImage]: ${id}`);
         const responseData = await deleteImageApi(id);
         if (responseData === 204) {
             setAlertForm({
@@ -348,6 +394,91 @@ const Detail = (item: Item) => {
 
             setCategoryList(responseData);
         };
+        const fetchItem = async (id: string) => {
+            const responseData = await getImage(id);
+
+            if (responseData === null) {
+                setAlertForm({
+                    title: "로드 실패",
+                    content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                    showCancel: false,
+                    submit: () => {
+                        // @ts-ignore
+                        navigation.reset({
+                            index: 0,
+                            // @ts-ignore
+                            routes: [{name: "Home"}]
+                        });
+                    },
+                });
+                setShowAlert(true);
+            } else if (responseData === 401) {
+                await removeToken();
+                setAlertForm({
+                    title: "사용자 인증 실패",
+                    content: "다시 로그인 해주세요.",
+                    showCancel: false,
+                    submit: () => {
+                        // @ts-ignore
+                        navigation.reset({
+                            index: 0,
+                            // @ts-ignore
+                            routes: [{name: "Start"}]
+                        });
+                    },
+                });
+                setShowAlert(true);
+            } else {
+                // @ts-ignore
+                const receiveData: Item = responseData;
+                console.log(`[Loaded Item]: `, receiveData);
+                setFormData(prevState => ({...prevState, ...receiveData}));
+                if (receiveData.notifications && receiveData.notifications.length > 0) {
+                    for (let i = 0; i < receiveData.notifications.length; i++) {
+                        const referenceDate = new Date(`${receiveData.date}T${receiveData.time}`);
+                        // @ts-ignore
+                        const targetDate = new Date(receiveData.notifications[i].notification_time);
+
+                        const oneMonthBefore = new Date(referenceDate);
+                        oneMonthBefore.setMonth(oneMonthBefore.getMonth() - 1);
+
+                        const oneWeekBefore = new Date(referenceDate);
+                        oneWeekBefore.setDate(oneWeekBefore.getDate() - 7);
+
+                        const threeDaysBefore = new Date(referenceDate);
+                        threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
+
+                        const oneDayBefore = new Date(referenceDate);
+                        oneDayBefore.setDate(oneDayBefore.getDate() - 1);
+
+                        const threeHoursBefore = new Date(referenceDate);
+                        threeHoursBefore.setHours(threeHoursBefore.getHours() - 3);
+
+                        const oneHourBefore = new Date(referenceDate);
+                        oneHourBefore.setHours(oneHourBefore.getHours() - 1);
+
+                        const checkTimeDifference = () => {
+                            if (targetDate.getTime() === oneMonthBefore.getTime()) {
+                                setAlarms((prev) => [...prev, "1month"]);
+                            } else if (targetDate.getTime() === oneWeekBefore.getTime()) {
+                                setAlarms((prev) => [...prev, "1week"]);
+                            } else if (targetDate.getTime() === threeDaysBefore.getTime()) {
+                                setAlarms((prev) => [...prev, "3day"]);
+                            } else if (targetDate.getTime() === oneDayBefore.getTime()) {
+                                setAlarms((prev) => [...prev, "1day"]);
+                            } else if (targetDate.getTime() === threeHoursBefore.getTime()) {
+                                setAlarms((prev) => [...prev, "3hour"]);
+                            } else if (targetDate.getTime() === oneHourBefore.getTime()) {
+                                setAlarms((prev) => [...prev, "1hour"]);
+                            }
+                        };
+
+                        checkTimeDifference();
+                    }
+                    setIsAlarm(true);
+                }
+            }
+        };
 
         // @ts-ignore
         if (!item.route.params.item) {
@@ -365,17 +496,18 @@ const Detail = (item: Item) => {
                 },
             });
             setShowAlert(true);
+            return;
         } else {
             // @ts-ignore
-            setFormData(prevState => ({...prevState, ...item.route.params.item}));
-            // @ts-ignore
-            setSelectedCategory(item.route.params.item.category_id);
+            const propsItem = item.route.params.item;
+            setSelectedCategory(propsItem.category_id);
+            // noinspection JSIgnoredPromiseFromCall
+            fetchToken();
+            // noinspection JSIgnoredPromiseFromCall
+            loadCategoryList();
+            // noinspection JSIgnoredPromiseFromCall
+            fetchItem(propsItem.id);
         }
-
-        // noinspection JSIgnoredPromiseFromCall
-        fetchToken();
-        // noinspection JSIgnoredPromiseFromCall
-        loadCategoryList();
     }, []);
 
     return (
@@ -402,14 +534,24 @@ const Detail = (item: Item) => {
                         size={"2xl"}
                         resizeMode={"contain"}
                     />
-                    <HStack
-                        space={"sm"}
-                        className={"flex-1 items-center justify-center"}
-                        style={{marginTop: 10}}
-                    >
-                        <Ionicons name={"warning-outline"} size={18} color={"gray"}/>
-                        <Text style={{color: "gray"}}>인식 결과가 정확하지 않을 수 있습니다.</Text>
-                    </HStack>
+                    {
+                        ((new Date(formData.date + "T" + formData.time)) < (new Date()) || formData.is_used) && (
+                            <HStack
+                                space={"sm"}
+                                className={"flex-1 items-center justify-center"}
+                                style={{marginTop: 10}}
+                            >
+                                <Ionicons name={"warning-outline"} size={18} color={"gray"}/>
+                                <Text style={{color: "gray"}}>
+                                    {
+                                        (new Date(formData.date + "T" + formData.time)) < (new Date()) ?
+                                            "만료된 데이터입니다."
+                                            : "사용 완료된 데이터입니다."
+                                    }
+                                </Text>
+                            </HStack>
+                        )
+                    }
                 </Box>
                 <VStack space={"md"} className={"w-full p-6"} style={{paddingLeft: 50, paddingRight: 50}}>
                     <FormControl
@@ -780,7 +922,7 @@ const Detail = (item: Item) => {
             </ScrollView>
 
             {/* Footer */}
-            <VStack space={"xs"} className={"border-t"} style={{borderColor: "#ffaa00"}}>
+            <VStack space={"xs"}>
                 <HStack space={"md"}>
                     <Pressable
                         className={"flex-1 items-center justify-center bg-custom-orange p-4"}
@@ -793,10 +935,11 @@ const Detail = (item: Item) => {
                 <HStack>
                     <Pressable
                         className={"flex-1 items-center justify-center bg-custom-beige p-4"}
-                        disabled={saveDisabledCheck()}
-                        onPress={saveContent}
+                        onPress={completeContent}
                     >
-                        <Text style={{color: "black"}} bold size={"3xl"}>사용 완료</Text>
+                        <Text style={{color: "black"}} bold size={"3xl"}>
+                            {formData.is_used ? "사용 완료 취소" : "사용 완료"}
+                        </Text>
                     </Pressable>
                     <Pressable
                         className={"flex-1 items-center justify-center bg-custom-red p-4"}

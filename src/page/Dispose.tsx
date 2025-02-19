@@ -1,11 +1,26 @@
-import {Text} from "@/src/components/ui/text";
 import {Box} from "@/src/components/ui/box";
-import {Button, ButtonText} from "@/src/components/ui/button";
-import {HStack} from "@/src/components/ui/hstack";
-import {FlatList, RefreshControl, ScrollView} from "react-native";
-import {Input, InputField, InputIcon, InputSlot} from "@/src/components/ui/input";
-import {AddIcon, ChevronDownIcon, SearchIcon} from "@/src/components/ui/icon";
+import {Pressable} from "@/src/components/ui/pressable";
+import {Ionicons} from "@expo/vector-icons";
+import {Text} from "@/src/components/ui/text";
 import React, {useEffect, useState} from "react";
+import {Spinner} from "@/src/components/ui/spinner";
+import colors from "tailwindcss/colors";
+import {
+    AlertDialog,
+    AlertDialogBackdrop,
+    AlertDialogBody,
+    AlertDialogContent,
+    AlertDialogFooter,
+    AlertDialogHeader
+} from "@/src/components/ui/alert-dialog";
+import {Heading} from "@/src/components/ui/heading";
+import {Button, ButtonText} from "@/src/components/ui/button";
+import {AlertForm, Category, Item} from "@/src/utils/interfaceCase";
+import {useNavigation} from "@react-navigation/native";
+import {FlatList, RefreshControl, ScrollView} from "react-native";
+import {HStack} from "@/src/components/ui/hstack";
+import {getToken, removeToken} from "@/src/services/AuthService";
+import {deleteImage as deleteImageApi, getCategoryList, getImageList, getUser, deleteAll} from "@/src/api/api";
 import {
     Select,
     SelectBackdrop,
@@ -18,31 +33,15 @@ import {
     SelectPortal,
     SelectTrigger
 } from "@/src/components/ui/select";
-import {Fab, FabIcon} from "@/src/components/ui/fab";
+import {ChevronDownIcon, SearchIcon} from "@/src/components/ui/icon";
+import {Input, InputField, InputIcon, InputSlot} from "@/src/components/ui/input";
 import {VStack} from "@/src/components/ui/vstack";
-import {Heading} from "@/src/components/ui/heading";
-import {Pressable} from "@/src/components/ui/pressable";
-import {Ionicons} from "@expo/vector-icons";
 import {Image} from "@/src/components/ui/image";
-import {useNavigation} from "@react-navigation/native";
-import {getToken, removeToken} from '../services/AuthService';
-import {deleteImage as deleteImageApi, getCategoryList, getImageList, getUser} from "@/src/api/api";
-import {
-    AlertDialog,
-    AlertDialogBackdrop,
-    AlertDialogBody,
-    AlertDialogContent,
-    AlertDialogFooter,
-    AlertDialogHeader
-} from "@/src/components/ui/alert-dialog";
-import {AlertForm, Category, Item} from "@/src/utils/interfaceCase";
-import {Spinner} from "@/src/components/ui/spinner";
-import colors from "tailwindcss/colors";
-import {Audio, AVPlaybackStatus} from 'expo-av';
-import {Sound} from "expo-av/build/Audio/Sound";
 
-const Home = () => {
+const Dispose = () => {
     const navigation = useNavigation();
+    const [categoryList, setCategoryList] = useState<Category[] | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [alertForm, setAlertForm] = useState<AlertForm>({
         title: "",
         content: "",
@@ -50,23 +49,21 @@ const Home = () => {
         submit: null,
     });
     const [showAlert, setShowAlert] = useState(false);
-    const [searchText, setSearchText] = useState("");
-    const [categoryList, setCategoryList] = useState<Category[] | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
-    const [sortCase, setSortCase] = useState("valid");
-    const [imageList, setImageList] = useState<Item[]>([]);
-    const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [audioUri, setAudioUri] = useState<string | null>(null);
-    const [permissionResponse, requestPermission] = Audio.usePermissions();
-    const [recording, setRecording] = useState<Audio.Recording | null>(null);
-    const [showAudioAlert, setShowAudioAlert] = useState(false);
+    const [imageList, setImageList] = useState<Item[]>([]);
+    const [searchText, setSearchText] = useState("");
+    const [sortCase, setSortCase] = useState("valid");
+    const [refreshing, setRefreshing] = useState(false);
+
+    const handleChangeCategory = (category: string) => {
+        setSelectedCategory(category);
+    };
 
     const filteredData = (): Item[] => {
         let filtering: Item[] = [...imageList];
         // 만료/사용완료 데이터 필터링
         const now = new Date();
-        filtering = filtering.filter(item => (new Date(item.date + "T" + item.time)) >= now && !item.is_used);
+        filtering = filtering.filter(item => (new Date(item.date + "T" + item.time)) < now || item.is_used);
         // 카테고리 필터링
         if (selectedCategory !== "all") {
             filtering = filtering.filter(item => item.category_id === selectedCategory);
@@ -87,11 +84,11 @@ const Home = () => {
                 const dateTimeB = new Date(`${b.date}T${b.time}`);
                 return dateTimeA.getTime() - dateTimeB.getTime();
             });
-        } else if (sortCase === "created") {
+        } else if (sortCase === "updated") {
             filtering = filtering.sort((a, b) => {
-                const dateTimeA = new Date(a.created_at);
-                const dateTimeB = new Date(b.created_at);
-                return dateTimeA.getTime() - dateTimeB.getTime();
+                const dateTimeA = new Date(a.updated_at);
+                const dateTimeB = new Date(b.updated_at);
+                return dateTimeB.getTime() - dateTimeA.getTime();
             });
         }
         return filtering;
@@ -99,49 +96,6 @@ const Home = () => {
 
     const onValueChangeSelect = (sort: string) => {
         setSortCase(sort);
-    };
-
-    const handleChangeCategory = (category: string) => {
-        setSelectedCategory(category);
-    };
-
-    const onRefresh = async () => {
-        setRefreshing(true);
-        await fetchImageList();
-        setRefreshing(false);
-    };
-
-    const fetchImageList = async () => {
-        setIsLoading(true);
-        const responseData = await getImageList();
-        setIsLoading(false);
-        if (responseData === null) {
-            setAlertForm({
-                title: "리스트 로드 실패",
-                content: "리스트 로드에 실패했습니다. 앱을 재실행 해주세요.",
-                showCancel: false,
-                submit: null,
-            });
-            setShowAlert(true);
-        } else if (responseData === 401) {
-            setAlertForm({
-                title: "사용자 인증 실패",
-                content: "다시 로그인 해주세요.",
-                showCancel: false,
-                submit: () => {
-                    // @ts-ignore
-                    navigation.reset({
-                        index: 0,
-                        // @ts-ignore
-                        routes: [{name: "Start"}]
-                    });
-                },
-            });
-            setShowAlert(true);
-        } else {
-            // @ts-ignore
-            setImageList(responseData);
-        }
     };
 
     const deleteConfirm = (id: string) => {
@@ -195,78 +149,103 @@ const Home = () => {
         }
     };
 
-    const startRecoding = async () => {
-        /* expo-audio */
-        // const status = await AudioModule.requestRecordingPermissionsAsync();
-        // if (!status.granted) {
-        //     setAlertForm({
-        //         title: "권한 필요",
-        //         content: "앱 설정에서 마이크 권한을 변경해주세요.",
-        //         showCancel: false,
-        //         submit: () => {
-        //             Linking.openSettings();
-        //         },
-        //     });
-        // } else {
-        //     await audioRecorder.prepareToRecordAsync();
-        //     audioRecorder.record();
-        //     console.log(`[Audio Recording Start]`);
-        // }
-
-        /* expo-av */
-        try {
-            // @ts-ignore
-            if (permissionResponse.status !== 'granted') {
-                console.log('Requesting permission..');
-                await requestPermission();
-            }
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: true,
-                playsInSilentModeIOS: true,
+    const fetchImageList = async () => {
+        setIsLoading(true);
+        const responseData = await getImageList();
+        setIsLoading(false);
+        if (responseData === null) {
+            setAlertForm({
+                title: "리스트 로드 실패",
+                content: "리스트 로드에 실패했습니다. 앱을 재실행 해주세요.",
+                showCancel: false,
+                submit: null,
             });
-
-            const {recording} = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY
-            );
-            setRecording(recording);
-            console.log(`[Audio Recording Start]`);
-        } catch (err) {
-            console.log(`[Audio Recording Error]: ${err}`);
+            setShowAlert(true);
+        } else if (responseData === 401) {
+            setAlertForm({
+                title: "사용자 인증 실패",
+                content: "다시 로그인 해주세요.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else {
+            // @ts-ignore
+            setImageList(responseData);
         }
     };
 
-    const stopRecording = async () => {
-        /* expo-audio */
-        // await audioRecorder.stop();
-        // console.log(`[Audio Recording Stop]`);
-        // const uri = audioRecorder.uri;
-        // console.log(`[Audio Recording Uri]: ${uri}`);
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await fetchImageList();
+        setRefreshing(false);
+    };
 
-        /* expo-av */
-        if (recording) {
-            setRecording(null);
-            await recording.stopAndUnloadAsync();
-            console.log(`[Audio Recording Stop]`);
-            await Audio.setAudioModeAsync(
-                {
-                    allowsRecordingIOS: false,
-                }
-            );
-            const uri = recording.getURI();
-            setAudioUri(uri);
-            console.log(`[Audio Recording Uri]: ${uri}`);
+    const deleteAllConfirm = () => {
+        if (imageList.length > 0) {
+            setAlertForm({
+                title: "삭제 여부 확인",
+                content: "정말 전체를 삭제하시겠습니까?",
+                showCancel: true,
+                submit: () => {
+                    // noinspection JSIgnoredPromiseFromCall
+                    handleDeleteAll();
+                },
+            });
+            setShowAlert(true);
+        } else {
+            setAlertForm({
+                title: "삭제 실패",
+                content: "삭제할 데이터가 없습니다.",
+                showCancel: false,
+                submit: null,
+            });
+            setShowAlert(true);
         }
     };
 
-    const [sound, setSound] = useState<Sound | null>(null);
-
-    const audioSearch = async () => {
-        if (audioUri !== null) {
-            const sound = new Audio.Sound();
-            await sound.loadAsync({uri: audioUri});
-            await sound.replayAsync();
+    const handleDeleteAll = async () => {
+        const responseData = await deleteAll();
+        if (responseData === 204) {
+            setAlertForm({
+                title: "삭제 완료",
+                content: "전체 삭제되었습니다.",
+                showCancel: false,
+                submit: () => fetchImageList(),
+            });
+            setShowAlert(true);
+        } else if (responseData === 401) {
+            await removeToken();
+            setAlertForm({
+                title: "사용자 인증 실패",
+                content: "다시 로그인 해주세요.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else {
+            setAlertForm({
+                title: "삭제 실패",
+                content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                showCancel: false,
+                submit: null,
+            });
+            setShowAlert(true);
         }
-        setAudioUri(null);
-        setShowAudioAlert(false);
     };
 
     useEffect(() => {
@@ -349,7 +328,7 @@ const Home = () => {
         const currentDate: Date = new Date();
         const timeDifference: number = targetDate.getTime() - currentDate.getTime();
         const daysLeft: number = Math.ceil(timeDifference / (1000 * 3600 * 24));
-        const d_day: string = daysLeft == 0 ? 'D-Day' : daysLeft < 0 ? 'Expired' : 'D-' + daysLeft;
+        const d_day: string = daysLeft < 0 ? "Expired" : "Completed";
 
         return (
             <Pressable
@@ -360,13 +339,15 @@ const Home = () => {
                 }}
             >
                 <HStack className={"flex w-full"}>
-                    <Image
-                        source={{uri: `${item.url}?sv=2022-11-02&ss=b&srt=o&sp=r&se=2025-02-28T10:19:22Z&st=2025-02-14T02:19:22Z&spr=https&sig=eGOeTigdul7Kd8%2BXnz3XpR6DfNM1vQYwXowhmsTbvqk%3D`}}
-                        alt={`img{item.id}`}
-                        size={"xl"}
-                        className={"flex-0"}
-                        resizeMode={"contain"}
-                    />
+                    <Box>
+                        <Image
+                            source={{uri: `${item.url}?sv=2022-11-02&ss=b&srt=o&sp=r&se=2025-02-28T10:19:22Z&st=2025-02-14T02:19:22Z&spr=https&sig=eGOeTigdul7Kd8%2BXnz3XpR6DfNM1vQYwXowhmsTbvqk%3D`}}
+                            alt={`img{item.id}`}
+                            size={"xl"}
+                            className={"flex-0"}
+                            resizeMode={"contain"}
+                        />
+                    </Box>
                     <Box className={"flex-1"} style={{marginLeft: 10}}>
                         <VStack space={"xl"}>
                             <VStack>
@@ -407,6 +388,19 @@ const Home = () => {
 
     return (
         <Box className={"bg-white flex-1"}>
+            {/* Header */}
+            <Box className={"flex-row items-center p-4"}>
+                <Pressable
+                    style={{paddingRight: 20}}
+                    onPress={() => navigation.goBack()}
+                >
+                    <Ionicons name={"arrow-back"} size={24} color={"black"}/>
+                </Pressable>
+                <Text size={"2xl"} bold={true}>
+                    사용완료/기간만료 데이터
+                </Text>
+            </Box>
+
             {/* 카테고리 영역 */}
             <Box className={"p-2"}>
                 <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} className={"flex-shrink"}>
@@ -466,7 +460,7 @@ const Home = () => {
                                 <SelectDragIndicator/>
                             </SelectDragIndicatorWrapper>
                             <SelectItem label={"만료기간 순"} value={"valid"}/>
-                            <SelectItem label={"등록일 순"} value={"created"}/>
+                            <SelectItem label={"수정일 순"} value={"updated"}/>
                         </SelectContent>
                     </SelectPortal>
                 </Select>
@@ -474,20 +468,12 @@ const Home = () => {
                     {/* 검색 Input */}
                     <Input
                         className={"flex-1"}
-                        style={{marginRight: 10}}
                     >
                         <InputSlot className={"pl-3"}>
                             <InputIcon as={SearchIcon}/>
                         </InputSlot>
                         <InputField placeholder={"Search..."} value={searchText} onChangeText={setSearchText}/>
                     </Input>
-                    {/* 음성 검색 */}
-                    <Button
-                        className={"rounded-full bg-custom-beige p-1"}
-                        onPress={() => setShowAudioAlert(true)}
-                    >
-                        <Ionicons name="mic" size={24} color="black"/>
-                    </Button>
                 </Box>
             </HStack>
 
@@ -507,23 +493,20 @@ const Home = () => {
                 contentContainerStyle={filteredData().length <= 0 ? {flexGrow: 1, justifyContent: "center", alignItems: "center"} : {}}
                 ListEmptyComponent={
                     <VStack space={"lg"} className={"justify-center items-center"}>
-                        <Text size={"xl"}>일정이 없습니다.</Text>
-                        <Text size={"xl"}>우측 하단의 + 버튼을 눌러 일정을 등록해보세요.</Text>
+                        <Text size={"xl"}>사용완료/기간만료 데이터가 없습니다.</Text>
                     </VStack>
                 }
             />
 
-            {/* 생성 화면 버튼 */}
-            <Fab
-                size={"lg"}
-                className={"bg-primary-600 hover:bg-primary-700 active:bg-primary-800"}
-                onPress={() => {
-                    // @ts-ignore
-                    navigation.navigate("Create");
-                }}
-            >
-                <FabIcon as={AddIcon} color={"white"}/>
-            </Fab>
+            {/* Footer */}
+            <HStack space={"md"}>
+                <Pressable
+                    className={"flex-1 items-center justify-center bg-custom-orange p-4"}
+                    onPress={deleteAllConfirm}
+                >
+                    <Text style={{color: "white"}} bold size={"3xl"}>전체 삭제</Text>
+                </Pressable>
+            </HStack>
 
             {/* Alert */}
             <AlertDialog
@@ -575,59 +558,6 @@ const Home = () => {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Audio Dialog */}
-            <AlertDialog
-                isOpen={showAudioAlert}
-                onClose={() => setShowAudioAlert(false)}
-            >
-                <AlertDialogBackdrop/>
-                <AlertDialogContent className={"w-full max-w-[415px] gap-4 items-center"}>
-                    <Pressable
-                        className={"rounded-full h-[52px] w-[52px] bg-background-error items-center justify-center"}
-                        onPress={recording ? stopRecording : startRecoding}
-                    >
-                        {
-                            recording ? (
-                                <Ionicons name="stop-circle" size={24} color="black"/>
-                            ) : (
-                                <Ionicons name="mic" size={24} color="black"/>
-                            )
-                        }
-                    </Pressable>
-                    <AlertDialogHeader className={"mb-2"}>
-                        <Heading size={"md"}>AI 음성 검색</Heading>
-                    </AlertDialogHeader>
-                    <AlertDialogBody>
-                        <Text size={"sm"} className={"text-center"}>
-                            상단의 마이크 버튼을 누르신 후, 음성을 녹음합니다.
-                        </Text>
-                        <Text size={"sm"} className={"text-center"}>
-                            녹음 정지 버튼을 누르면 하단의 검색 버튼이 활성화 됩니다.
-                        </Text>
-                    </AlertDialogBody>
-                    <AlertDialogFooter className={"mt-5"}>
-                        <Button
-                            size={"sm"}
-                            onPress={audioSearch}
-                            className={"px-[30px]"}
-                            isDisabled={audioUri === null}
-                        >
-                            <ButtonText>검색</ButtonText>
-                        </Button>
-                        <Button
-                            variant={"outline"}
-                            action={"secondary"}
-                            onPress={() => setShowAudioAlert(false)}
-                            size={"sm"}
-                            className={"px-[30px]"}
-                            isDisabled={recording !== null}
-                        >
-                            <ButtonText>취소</ButtonText>
-                        </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             {/* Spinner */}
             {
                 isLoading && (
@@ -638,7 +568,7 @@ const Home = () => {
                 )
             }
         </Box>
-    );
+    )
 };
 
-export default Home;
+export default Dispose;

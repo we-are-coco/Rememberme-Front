@@ -20,7 +20,7 @@ import {
 import {Heading} from "@/src/components/ui/heading";
 import {useNavigation} from "@react-navigation/native";
 import {getUser} from "@/src/api/api";
-import {UserData, AlertForm} from "@/src/utils/interfaceCase";
+import {AlertForm, UserData} from "@/src/utils/interfaceCase";
 
 const Settings = () => {
     const navigation = useNavigation();
@@ -109,7 +109,7 @@ const Settings = () => {
                         }}
                     >
                         <HStack className={"flex items-center justify-between"}>
-                            <Text size={"2xl"} bold={true}>{userData.name}</Text>
+                            <Text size={"2xl"} bold={true}>{userData.name} 님 환영합니다!</Text>
                             <Button
                                 size={"xl"}
                                 className={"rounded-full"}
@@ -122,43 +122,43 @@ const Settings = () => {
                 </Box>
 
                 {/* 유효기간 만료알림 설정 */}
-                <Box className={"mb-4 p-4 bg-white"}>
-                    <VStack space={"lg"}>
-                        {/* 타이틀 */}
-                        <HStack space={"lg"}>
-                            <Ionicons name={"notifications-outline"} size={24} color={"black"}/>
-                            <Text size={"lg"} bold={true}>유효기간 만료알림 설정</Text>
-                        </HStack>
-                        {/* 알림 설정 */}
-                        <Pressable
-                            className={"p-6 bg-background-100 rounded-md"}
-                            onPress={() => {
-                                alert("text")
-                            }}
-                        >
-                            <HStack className={"flex items-center justify-between"}>
-                                <Text size={"xl"} bold={true}>5일전 오전 9시</Text>
-                                <Pressable
-                                    onPress={() => {
-                                        alert("삭제")
-                                    }}
-                                >
-                                    <Ionicons name={"trash-outline"} size={24} color={"gray"}/>
-                                </Pressable>
-                            </HStack>
-                        </Pressable>
-                        <Divider className={"my-0.5"}/>
-                        {/* 알림 추가 */}
-                        <Pressable
-                            className={"bg-white flex items-center justify-center p-2"}
-                            onPress={() => {
-                                alert("추가")
-                            }}
-                        >
-                            <Text size={"xl"} bold={true}>+ 알림 추가</Text>
-                        </Pressable>
-                    </VStack>
-                </Box>
+                {/*<Box className={"mb-4 p-4 bg-white"}>*/}
+                {/*    <VStack space={"lg"}>*/}
+                {/*        /!* 타이틀 *!/*/}
+                {/*        <HStack space={"lg"}>*/}
+                {/*            <Ionicons name={"notifications-outline"} size={24} color={"black"}/>*/}
+                {/*            <Text size={"lg"} bold={true}>유효기간 만료알림 설정</Text>*/}
+                {/*        </HStack>*/}
+                {/*        /!* 알림 설정 *!/*/}
+                {/*        <Pressable*/}
+                {/*            className={"p-6 bg-background-100 rounded-md"}*/}
+                {/*            onPress={() => {*/}
+                {/*                alert("text")*/}
+                {/*            }}*/}
+                {/*        >*/}
+                {/*            <HStack className={"flex items-center justify-between"}>*/}
+                {/*                <Text size={"xl"} bold={true}>5일전 오전 9시</Text>*/}
+                {/*                <Pressable*/}
+                {/*                    onPress={() => {*/}
+                {/*                        alert("삭제")*/}
+                {/*                    }}*/}
+                {/*                >*/}
+                {/*                    <Ionicons name={"trash-outline"} size={24} color={"gray"}/>*/}
+                {/*                </Pressable>*/}
+                {/*            </HStack>*/}
+                {/*        </Pressable>*/}
+                {/*        <Divider className={"my-0.5"}/>*/}
+                {/*        /!* 알림 추가 *!/*/}
+                {/*        <Pressable*/}
+                {/*            className={"bg-white flex items-center justify-center p-2"}*/}
+                {/*            onPress={() => {*/}
+                {/*                alert("추가")*/}
+                {/*            }}*/}
+                {/*        >*/}
+                {/*            <Text size={"xl"} bold={true}>+ 알림 추가</Text>*/}
+                {/*        </Pressable>*/}
+                {/*    </VStack>*/}
+                {/*</Box>*/}
 
                 {/* 기타 설정 */}
                 <Box className={"p-4 bg-white"}>
@@ -166,7 +166,28 @@ const Settings = () => {
                         <Pressable
                             className={"bg-white p-2"}
                             onPress={() => {
-                                alert("기기내 쿠폰 일괄등록")
+                                // @ts-ignore
+                                navigation.navigate("Dispose");
+                            }}
+                        >
+                            <HStack className={"flex items-center justify-between"}>
+                                <HStack space={"lg"}>
+                                    <Ionicons name={"trash-bin-outline"} size={24} color={"black"}/>
+                                    <Text size={"xl"} bold={true}>사용완료/기간만료 데이터</Text>
+                                </HStack>
+                                <Ionicons name={"chevron-forward"} size={24} color={"black"}/>
+                            </HStack>
+                        </Pressable>
+                        <Pressable
+                            className={"bg-white p-2"}
+                            onPress={() => {
+                                setAlertForm({
+                                    title: "기기내 쿠폰 일괄등록",
+                                    content: "준비 중인 기능입니다.",
+                                    showCancel: false,
+                                    submit: null
+                                });
+                                setShowAlert(true);
                             }}
                         >
                             <HStack className={"flex items-center justify-between"}>
@@ -179,16 +200,16 @@ const Settings = () => {
                         </Pressable>
                         <Pressable
                             className={"bg-white p-2"}
+                            style={{marginTop: 20}}
                             onPress={() => {
                                 alert("사용완료/기간만료 데이터 삭제")
                             }}
                         >
                             <HStack className={"flex items-center justify-between"}>
                                 <HStack space={"lg"}>
-                                    <Ionicons name={"trash-bin-outline"} size={24} color={"black"}/>
-                                    <Text size={"xl"} bold={true}>사용완료/기간만료 데이터 삭제</Text>
+                                    <Ionicons name={"construct"} size={24} color={"black"}/>
+                                    <Text size={"xl"} bold={true}>더 다양하고 새로운 기능들이 추가될 예정입니다.</Text>
                                 </HStack>
-                                <Ionicons name={"chevron-forward"} size={24} color={"black"}/>
                             </HStack>
                         </Pressable>
                     </VStack>
@@ -214,6 +235,18 @@ const Settings = () => {
                         </Text>
                     </AlertDialogBody>
                     <AlertDialogFooter>
+                        {
+                            alertForm.showCancel && (
+                                <Button
+                                    variant={"outline"}
+                                    action={"secondary"}
+                                    onPress={() => setShowAlert(false)}
+                                    size={"sm"}
+                                >
+                                    <ButtonText>취소</ButtonText>
+                                </Button>
+                            )
+                        }
                         <Button
                             variant={"outline"}
                             action={"secondary"}

@@ -12,6 +12,7 @@ import Register from "@/src/page/Register";
 import Login from "@/src/page/Login";
 import Create from "@/src/page/Create";
 import Detail from "@/src/page/Detail";
+import Dispose from "@/src/page/Dispose";
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +28,7 @@ const App = () => {
                     <Stack.Screen name={"Login"} component={Login}/>
                     <Stack.Screen name={"Create"} component={Create}/>
                     <Stack.Screen name={"Detail"} component={Detail}/>
+                    <Stack.Screen name={"Dispose"} component={Dispose}/>
                 </Stack.Navigator>
             </NavigationContainer>
         </GluestackUIProvider>

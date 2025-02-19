@@ -138,7 +138,7 @@ export const saveImage = async (formData: any) => {
 // 이미지 리스트 불러오기 API
 export const getImageList = async (): Promise<Item[] | number | null> => {
     try {
-        const response = await axiosInstance.get(`/screenshot?page=1`);
+        const response = await axiosInstance.get(`/screenshot?only_unused=false`);
         console.log(`[getImageList] status: ${response.status}, `, response.data);
         if (response.status === 200) {
             return response.data.screenshots;
@@ -163,6 +163,66 @@ export const deleteImage = async (id: string): Promise<number> => {
         return response.status;
     } catch (error: any) {
         console.log(`[deleteImage error] status: ${error.status}, `, error.response.data.detail);
+        return error.status;
+    }
+};
+
+// 이미지 불러오기 API
+export const getImage = async (id: string): Promise<Item | number | null> => {
+    try {
+        const response = await axiosInstance.get(`/screenshot/${id}`);
+        console.log(`[getImage] status: ${response.status}, `, response.data);
+        if (response.status === 200) {
+            return response.data;
+        } else {
+            return null;
+        }
+    } catch (error: any) {
+        console.log(`[getImage error] status: ${error.status}, `, error.response.data.detail);
+        if (error.status === 401) {
+            return error.status;
+        } else {
+            return null;
+        }
+    }
+};
+
+// 이미지 수정 API
+export const updateImage = async (formData: any) => {
+    try {
+        const response = await axiosInstance.put(`/screenshot/${formData.id}`, JSON.stringify(formData));
+        console.log(`[updateImage] status: ${response.status}, `, response.data);
+        return response.status;
+    } catch (error: any) {
+        console.log(`[updateImage error] status: ${error.status}, `, error.response.data.detail);
+        return error.status;
+    }
+};
+
+// 사용완료/사용완료취소 API
+export const isUsedUpdate = async (id: string, is_used: boolean): Promise<boolean | number> => {
+    try {
+        const response = await axiosInstance.put(`/screenshot/${id}/mark-as-used?used=${is_used}`);
+        console.log(`[isUsedUpdate] status: ${response.status}, `, response.data);
+        return response.status === 200;
+    } catch (error: any) {
+        console.log(`[isUsedUpdate error] status: ${error.status}, `, error.response.data.detail);
+        if (error.status === 401) {
+            return 401;
+        } else {
+            return false;
+        }
+    }
+};
+
+// 만료/사용완료 데이터 전체 삭제 API
+export const deleteAll = async () => {
+    try {
+        const response = await axiosInstance.post(`/screenshot/delete/outdated`);
+        console.log(`[deleteAll] status: ${response.status}, `, response.data);
+        return response.status;
+    } catch (error: any) {
+        console.log(`[deleteAll error] status: ${error.status}, `, error.response.data.detail);
         return error.status;
     }
 };
