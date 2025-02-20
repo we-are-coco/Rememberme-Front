@@ -19,7 +19,7 @@
         "foregroundImage": "./assets/image/coco-icon.png",
         "backgroundColor": "#f5efcd"
       },
-      "googleServicesFile": "./.eas/.env/GOOGLE_SERVICES_JSON",
+      "googleServicesFile": "./google-services.json",
       "package": "com.coco.rememberme",
       "permissions": ["READ_MEDIA_IMAGES", "CAMERA"]
     },
