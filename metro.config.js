@@ -1,12 +1,12 @@
-const {getDefaultConfig} = require("expo/metro-config");
-const {withNativeWind} = require('nativewind/metro');
+const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
 
-const config = getDefaultConfig(__dirname)
+const config = getDefaultConfig(__dirname);
 
 config.transformer = {
-    ...config.transformer,
-    _expoRelativeProjectRoot: __dirname
-}
+  ...config.transformer,
+  _expoRelativeProjectRoot: __dirname,
+};
 
 // noinspection JSCheckFunctionSignatures
-module.exports = withNativeWind(config, {input: './global.css'})
+module.exports = withNativeWind(config, { input: "./global.css" });

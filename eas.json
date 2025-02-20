@@ -11,7 +11,7 @@
         "gradleCommand": ":app:assembleDebug"
       },
       "env": {
-        "FIREBASE_CREDENTIALS": "@google-services.json"
+        "GOOGLE_SERVICES_JSON": "file:google-services.json"
       }
     },
     "preview": {
@@ -20,7 +20,7 @@
         "buildType": "apk"
       },
       "env": {
-        "FIREBASE_CREDENTIALS": "@google-services.json"
+        "GOOGLE_SERVICES_JSON": "file:google-services.json"
       }
     },
     "production": {
@@ -29,7 +29,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "FIREBASE_CREDENTIALS": "@google-services.json"
+        "GOOGLE_SERVICES_JSON": "file:google-services.json"
       }
     }
   },
