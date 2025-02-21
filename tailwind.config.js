@@ -176,6 +176,7 @@ module.exports = {
                 custom: {
                     orange: '#ffaa00',
                     beige: '#f5efcd',
+                    beige2: '#efd09e',
                     red: '#de0e0e',
                 }
             },

@@ -19,8 +19,10 @@ import {
 } from "@/src/components/ui/alert-dialog";
 import {Heading} from "@/src/components/ui/heading";
 import {useNavigation} from "@react-navigation/native";
-import {getUser} from "@/src/api/api";
+import {getUser, deleteUser} from "@/src/api/api";
 import {AlertForm, UserData} from "@/src/utils/interfaceCase";
+import {Spinner} from "@/src/components/ui/spinner";
+import colors from "tailwindcss/colors";
 
 const Settings = () => {
     const navigation = useNavigation();
@@ -36,6 +38,7 @@ const Settings = () => {
         name: "",
         email: "",
     });
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLogout = async () => {
         await removeToken();
@@ -53,6 +56,66 @@ const Settings = () => {
             },
         });
         setShowAlert(true);
+    };
+
+    const deleteConfirm = (id: string) => {
+        setAlertForm({
+            title: "탈퇴 여부 확인",
+            content: "정말 탈퇴하시겠습니까?",
+            showCancel: true,
+            submit: () => {
+                // noinspection JSIgnoredPromiseFromCall
+                handleDeleteUser();
+            },
+        });
+        setShowAlert(true);
+    };
+
+    const handleDeleteUser = async () => {
+        setIsLoading(true);
+        const responseData = await deleteUser();
+        setIsLoading(false);
+        if (responseData === 401) {
+            await removeToken();
+            setAlertForm({
+                title: "사용자 인증 실패",
+                content: "다시 로그인 해주세요.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else if (responseData === 204) {
+            await removeToken();
+            setAlertForm({
+                title: "회원 탈퇴 완료",
+                content: "회원 탈퇴 되었습니다. 시작 화면으로 돌아갑니다.",
+                showCancel: false,
+                submit: () => {
+                    // @ts-ignore
+                    navigation.reset({
+                        index: 0,
+                        // @ts-ignore
+                        routes: [{name: "Start"}]
+                    });
+                },
+            });
+            setShowAlert(true);
+        } else {
+            setAlertForm({
+                title: "회원 탈퇴 실패",
+                content: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해주세요.",
+                showCancel: false,
+                submit: null,
+            });
+            setShowAlert(true);
+        }
     };
 
     useEffect(() => {
@@ -201,9 +264,6 @@ const Settings = () => {
                         <Pressable
                             className={"bg-white p-2"}
                             style={{marginTop: 20}}
-                            onPress={() => {
-                                alert("사용완료/기간만료 데이터 삭제")
-                            }}
                         >
                             <HStack className={"flex items-center justify-between"}>
                                 <HStack space={"lg"}>
@@ -214,6 +274,15 @@ const Settings = () => {
                         </Pressable>
                     </VStack>
                 </Box>
+                <Pressable
+                    className={"p-4"}
+                    onPress={() => {
+                        // @ts-ignore
+                        deleteConfirm();
+                    }}
+                >
+                    <Text style={{color: "#ffaa00", textDecorationLine: "underline"}}>탈퇴하기</Text>
+                </Pressable>
             </VStack>
             <AlertDialog
                 isOpen={showAlert}
@@ -249,7 +318,7 @@ const Settings = () => {
                         }
                         <Button
                             variant={"outline"}
-                            action={"secondary"}
+                            action={"primary"}
                             onPress={() => {
                                 if (alertForm.submit !== null) {
                                     alertForm.submit();
@@ -263,6 +332,16 @@ const Settings = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Spinner */}
+            {
+                isLoading && (
+                    <Box className={"absolute w-full h-full"}>
+                        <Box className={"w-full h-full"} style={{opacity: 0.3, backgroundColor: "black"}}/>
+                        <Spinner size={"large"} color={colors.amber[600]} className={"absolute w-full h-full"}/>
+                    </Box>
+                )
+            }
         </ScrollView>
     );
 };

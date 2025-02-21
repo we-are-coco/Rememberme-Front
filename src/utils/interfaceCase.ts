@@ -66,3 +66,12 @@ export interface UserData {
     name: string;
     email: string;
 }
+
+export interface RecommendData {
+    screenshot_id: string;
+    is_reco: boolean;
+    reco_date: string;
+    reco_time: string;
+    item: string;
+    description: string;
+}

@@ -2,7 +2,7 @@ import axiosInstance from "@/src/api/axiosInstance";
 import encodeAxiosInstance from "@/src/api/encodeAxiosInstance";
 import multipartAxiosInstance from "@/src/api/multipartAxiosInstance";
 import {saveToken} from "@/src/services/AuthService";
-import {Category, Item} from "@/src/utils/interfaceCase";
+import {Category, Item, RecommendData} from "@/src/utils/interfaceCase";
 
 // 테스트 API
 export const testHello = async () => {
@@ -224,5 +224,57 @@ export const deleteAll = async () => {
     } catch (error: any) {
         console.log(`[deleteAll error] status: ${error.status}, `, error.response.data.detail);
         return error.status;
+    }
+};
+
+// 음성 검색 API
+export const audioSearch = async (formData: any): Promise<Item[] | number | null> => {
+    try {
+        const response = await multipartAxiosInstance.post(`/screenshot/audiosearch`, formData);
+        console.log(`[audioSearch] status: ${response.status}, `, response.data);
+        if (response.status === 200) {
+            return response.data.screenshots;
+        } else {
+            return null;
+        }
+    } catch (error: any) {
+        console.log(`[audioSearch error] status: ${error.status}, `, error.response.data.detail);
+        if (error.status === 401) {
+            return error.status;
+        } else {
+            return null;
+        }
+    }
+};
+
+// 회원 탈퇴 API
+export const deleteUser = async () => {
+    try {
+        const response = await axiosInstance.delete(`/users`);
+        console.log(`[deleteUser] status: ${response.status}, `, response.data);
+        return response.status;
+    } catch (error: any) {
+        console.log(`[deleteUser error] status: ${error.status}, `, error.response.data.detail);
+        return error.status;
+    }
+};
+
+// 쿠폰 추천 API
+export const recommendCoupon = async (days: number): Promise<RecommendData[] | number | null> => {
+    try {
+        const response = await axiosInstance.post(`/recommendations/coupon?days=${days}`);
+        console.log(`[recommendCoupon] status: ${response.status}, `, response.data);
+        if (response.status === 200) {
+            return response.data;
+        } else {
+            return null;
+        }
+    } catch (error: any) {
+        console.log(`[recommendCoupon error] status: ${error.status}, `, error.response.data.detail);
+        if (error.status === 401) {
+            return 401;
+        } else {
+            return null;
+        }
     }
 };

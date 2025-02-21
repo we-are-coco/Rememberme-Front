@@ -208,7 +208,7 @@ const Create = () => {
         const responseData = await uploadImageApi(formData);
         if (responseData === null) {
             setAlertForm({
-                title: "인식 실패",
+                title: "이미지 인식 실패",
                 content: "이미지 인식에 실패했습니다. 초기화 후 재시도 하시거나, 각 항목을 직접 입력해주세요.",
                 showCancel: false,
                 submit: null,

@@ -26,7 +26,7 @@ import {Ionicons} from "@expo/vector-icons";
 import {Image} from "@/src/components/ui/image";
 import {useNavigation} from "@react-navigation/native";
 import {getToken, removeToken} from '../services/AuthService';
-import {deleteImage as deleteImageApi, getCategoryList, getImageList, getUser} from "@/src/api/api";
+import {deleteImage as deleteImageApi, getCategoryList, getImageList, getUser, audioSearch as audioSearchApi} from "@/src/api/api";
 import {
     AlertDialog,
     AlertDialogBackdrop,
@@ -38,7 +38,7 @@ import {
 import {AlertForm, Category, Item} from "@/src/utils/interfaceCase";
 import {Spinner} from "@/src/components/ui/spinner";
 import colors from "tailwindcss/colors";
-import {Audio, AVPlaybackStatus} from 'expo-av';
+import {Audio} from 'expo-av';
 import {Sound} from "expo-av/build/Audio/Sound";
 
 const Home = () => {
@@ -196,24 +196,6 @@ const Home = () => {
     };
 
     const startRecoding = async () => {
-        /* expo-audio */
-        // const status = await AudioModule.requestRecordingPermissionsAsync();
-        // if (!status.granted) {
-        //     setAlertForm({
-        //         title: "권한 필요",
-        //         content: "앱 설정에서 마이크 권한을 변경해주세요.",
-        //         showCancel: false,
-        //         submit: () => {
-        //             Linking.openSettings();
-        //         },
-        //     });
-        // } else {
-        //     await audioRecorder.prepareToRecordAsync();
-        //     audioRecorder.record();
-        //     console.log(`[Audio Recording Start]`);
-        // }
-
-        /* expo-av */
         try {
             // @ts-ignore
             if (permissionResponse.status !== 'granted') {
@@ -235,13 +217,6 @@ const Home = () => {
     };
 
     const stopRecording = async () => {
-        /* expo-audio */
-        // await audioRecorder.stop();
-        // console.log(`[Audio Recording Stop]`);
-        // const uri = audioRecorder.uri;
-        // console.log(`[Audio Recording Uri]: ${uri}`);
-
-        /* expo-av */
         if (recording) {
             setRecording(null);
             await recording.stopAndUnloadAsync();
@@ -257,16 +232,47 @@ const Home = () => {
         }
     };
 
-    const [sound, setSound] = useState<Sound | null>(null);
-
     const audioSearch = async () => {
+        setIsLoading(true);
+        setShowAudioAlert(false);
         if (audioUri !== null) {
-            const sound = new Audio.Sound();
-            await sound.loadAsync({uri: audioUri});
-            await sound.replayAsync();
+            const fileType = "audio/m4a";
+            const fileName = audioUri.split("/").pop() || "recording.m4a";
+            const formData = new FormData();
+            formData.append("file", {uri: audioUri, name: fileName, type: fileType} as any);
+
+            const responseData = await audioSearchApi(formData);
+            if (responseData === null) {
+                setAlertForm({
+                    title: "음성 인식 실패",
+                    content: "음성 인식에 실패했습니다. 다시 시도해주세요.",
+                    showCancel: false,
+                    submit: null,
+                });
+                setShowAlert(true);
+            } else if (responseData === 401) {
+                await removeToken();
+                setAlertForm({
+                    title: "사용자 인증 실패",
+                    content: "다시 로그인 해주세요.",
+                    showCancel: false,
+                    submit: () => {
+                        // @ts-ignore
+                        navigation.reset({
+                            index: 0,
+                            // @ts-ignore
+                            routes: [{name: "Start"}]
+                        });
+                    },
+                });
+                setShowAlert(true);
+            } else {
+                // @ts-ignore
+                setImageList(responseData);
+            }
         }
         setAudioUri(null);
-        setShowAudioAlert(false);
+        setIsLoading(false);
     };
 
     useEffect(() => {
@@ -493,7 +499,7 @@ const Home = () => {
 
             {/* 리스트 영역 */}
             <HStack space={"sm"} className={"flex-row justify-center items-center"}>
-                <Ionicons name="refresh" size={12} color="black" />
+                <Ionicons name="refresh" size={12} color="black"/>
                 <Text>아래로 스크롤하여 새로고침</Text>
             </HStack>
             <FlatList
@@ -504,11 +510,15 @@ const Home = () => {
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>
                 }
-                contentContainerStyle={filteredData().length <= 0 ? {flexGrow: 1, justifyContent: "center", alignItems: "center"} : {}}
+                contentContainerStyle={filteredData().length <= 0 ? {
+                    flexGrow: 1,
+                    justifyContent: "center",
+                    alignItems: "center"
+                } : {}}
                 ListEmptyComponent={
                     <VStack space={"lg"} className={"justify-center items-center"}>
-                        <Text size={"xl"}>일정이 없습니다.</Text>
-                        <Text size={"xl"}>우측 하단의 + 버튼을 눌러 일정을 등록해보세요.</Text>
+                        <Text size={"xl"}>등록된 쿠폰/티켓이 없습니다.</Text>
+                        <Text size={"xl"}>우측 하단의 + 버튼을 눌러 등록해보세요.</Text>
                     </VStack>
                 }
             />

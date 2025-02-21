@@ -7,9 +7,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/image/coco-splash.png",
+      "image": "./assets/image/nutty-no-bg.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffaa00"
+      "backgroundColor": "#f5efcd"
     },
     "ios": {
       "supportsTablet": true
