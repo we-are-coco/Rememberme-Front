@@ -296,8 +296,12 @@ const Create = () => {
     };
 
     const subtractTime = (date: string, time: string, unit: string, value: number): string => {
-        const newDate = new Date(`${date}T${time}:00.000Z`);
+        let newDate = new Date(`${date}T${time}:00.000Z`);
         switch (unit) {
+            case "minute":
+                newDate = new Date();
+                newDate.setMinutes(newDate.getMinutes() + value);
+                break;
             case "month":
                 newDate.setMonth(newDate.getMonth() - value);
                 break;
@@ -321,6 +325,9 @@ const Create = () => {
             let notifications = [];
             for (let i = 0; i < alarms.length; i++) {
                 switch (alarms[i]) {
+                    case "1min":
+                        notifications.push(subtractTime(sendData.date, sendData.time, "minute", 1));
+                        break;
                     case "1month":
                         notifications.push(subtractTime(sendData.date, sendData.time, "month", 1));
                         break;
@@ -778,6 +785,12 @@ const Create = () => {
                                             }}
                                         >
                                             <VStack space="md">
+                                                <Checkbox value="1min">
+                                                    <CheckboxIndicator>
+                                                        <CheckboxIcon as={CheckIcon}/>
+                                                    </CheckboxIndicator>
+                                                    <CheckboxLabel>1분 후(테스트 용)</CheckboxLabel>
+                                                </Checkbox>
                                                 {
                                                     ["쿠폰", "기타"].includes(categoryList?.find(item => item.id === selectedCategory)?.name as string) && (
                                                         <Checkbox value="1month">
