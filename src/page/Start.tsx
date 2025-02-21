@@ -28,8 +28,9 @@ const Start = () => {
     return (
         <Box className={"flex-1 justify-center items-center bg-custom-beige p-6"}>
             <Image
-                source={require("../../assets/image/coco-icon.png")}
+                source={require("../../assets/image/coco-no-bg.png")}
                 resizeMode={"contain"}
+                className={"w-1/2"}
             />
             <Button
                 className={"w-11/12 h-16 rounded-lg justify-center items-center mb-4"}

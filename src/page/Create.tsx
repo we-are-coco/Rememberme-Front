@@ -121,12 +121,13 @@ const Create = () => {
                         Linking.openSettings();
                     },
                 });
+                setShowAlert(true);
             } else {
                 await requestCameraPermission();
             }
+        } else {
+            setIsCameraOpen(true);
         }
-
-        setIsCameraOpen(true);
     };
 
     const takePicture = async () => {
