@@ -4,7 +4,7 @@ import {getToken} from "@/src/services/AuthService";
 // Axios 인스턴스 생성
 const encodeAxiosInstance = axios.create({
     baseURL: "https://cocorememberme.azurewebsites.net",  // API 서버의 기본 URL
-    timeout: 5000,  // 요청 타임아웃 설정 (5초)
+    timeout: 10000,  // 요청 타임아웃 설정 (10초)
     headers: {
         "Content-Type": "application/x-www-form-urlencoded",
     },

@@ -337,6 +337,7 @@ const Dispose = () => {
                     // @ts-ignore
                     navigation.navigate("Detail", {item: item});
                 }}
+                style={{marginBottom: 10}}
             >
                 <HStack className={"flex w-full"}>
                     <Box>
