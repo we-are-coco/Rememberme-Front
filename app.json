@@ -12,18 +12,20 @@
       "backgroundColor": "#f5efcd"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.coco.rememberme",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/image/coco-icon.png",
         "backgroundColor": "#f5efcd"
       },
+      "googleServicesFile": "./.eas/.env/GOOGLE_SERVICES_JSON",
       "package": "com.coco.rememberme",
-      "permissions": [
-        "READ_MEDIA_IMAGES",
-        "CAMERA"
-      ]
+      "permissions": ["READ_MEDIA_IMAGES", "CAMERA"]
     },
     "web": {
       "bundler": "metro",
@@ -35,8 +37,6 @@
       }
     },
     "owner": "ms-coco",
-    "plugins": [
-      "expo-secure-store"
-    ]
+    "plugins": ["expo-secure-store"]
   }
 }

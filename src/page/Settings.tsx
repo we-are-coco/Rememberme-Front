@@ -6,7 +6,6 @@ import {HStack} from "@/src/components/ui/hstack";
 import {Ionicons} from "@expo/vector-icons";
 import {Text} from "@/src/components/ui/text";
 import {Pressable} from "@/src/components/ui/pressable";
-import {Divider} from "@/src/components/ui/divider";
 import {ScrollView} from "react-native";
 import {getToken, removeToken} from "@/src/services/AuthService";
 import {
@@ -15,14 +14,15 @@ import {
     AlertDialogBody,
     AlertDialogContent,
     AlertDialogFooter,
-    AlertDialogHeader
+    AlertDialogHeader,
 } from "@/src/components/ui/alert-dialog";
 import {Heading} from "@/src/components/ui/heading";
 import {useNavigation} from "@react-navigation/native";
-import {getUser, deleteUser} from "@/src/api/api";
+import {deleteUser, getUser} from "@/src/api/api";
 import {AlertForm, UserData} from "@/src/utils/interfaceCase";
 import {Spinner} from "@/src/components/ui/spinner";
 import colors from "tailwindcss/colors";
+import {deleteFCMToken} from "@/src/services/FcmService";
 
 const Settings = () => {
     const navigation = useNavigation();
@@ -41,6 +41,7 @@ const Settings = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleLogout = async () => {
+        await deleteFCMToken();
         await removeToken();
         setAlertForm({
             title: "로그아웃",
@@ -51,14 +52,56 @@ const Settings = () => {
                 navigation.reset({
                     index: 0,
                     // @ts-ignore
-                    routes: [{name: "Start"}]
+                    routes: [{name: "Start"}],
                 });
             },
         });
         setShowAlert(true);
     };
 
-    const deleteConfirm = (id: string) => {
+    useEffect(() => {
+        const fetchToken = async () => {
+            const storedToken = await getToken();
+            if (!storedToken) {
+                // @ts-ignore
+                navigation.reset({
+                    index: 0,
+                    // @ts-ignore
+                    routes: [{name: "Start"}],
+                });
+            } else {
+                const responseData = await getUser();
+
+                if (responseData === "error") {
+                    await removeToken();
+                    setAlertForm({
+                        title: "사용자 인증 실패",
+                        content: "다시 로그인 해주세요.",
+                        showCancel: false,
+                        submit: () => {
+                            // @ts-ignore
+                            navigation.reset({
+                                index: 0,
+                                // @ts-ignore
+                                routes: [{name: "Start"}],
+                            });
+                        },
+                    });
+                    setShowAlert(true);
+                } else {
+                    setUserData({
+                        id: responseData.id,
+                        name: responseData.name,
+                        email: responseData.email,
+                    });
+                }
+            }
+        };
+        // noinspection JSIgnoredPromiseFromCall
+        fetchToken();
+    }, []);
+
+    const deleteConfirm = () => {
         setAlertForm({
             title: "탈퇴 여부 확인",
             content: "정말 탈퇴하시겠습니까?",

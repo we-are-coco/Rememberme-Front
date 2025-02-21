@@ -26,7 +26,13 @@ import {Ionicons} from "@expo/vector-icons";
 import {Image} from "@/src/components/ui/image";
 import {useNavigation} from "@react-navigation/native";
 import {getToken, removeToken} from '../services/AuthService';
-import {deleteImage as deleteImageApi, getCategoryList, getImageList, getUser, audioSearch as audioSearchApi} from "@/src/api/api";
+import {
+    audioSearch as audioSearchApi,
+    deleteImage as deleteImageApi,
+    getCategoryList,
+    getImageList,
+    getUser
+} from "@/src/api/api";
 import {
     AlertDialog,
     AlertDialogBackdrop,
@@ -39,7 +45,6 @@ import {AlertForm, Category, Item} from "@/src/utils/interfaceCase";
 import {Spinner} from "@/src/components/ui/spinner";
 import colors from "tailwindcss/colors";
 import {Audio} from 'expo-av';
-import {Sound} from "expo-av/build/Audio/Sound";
 
 const Home = () => {
     const navigation = useNavigation();
