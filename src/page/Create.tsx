@@ -145,9 +145,8 @@ const Create = () => {
             content: "입력된 정보가 모두 초기화됩니다. 초기화 하시겠습니까?",
             showCancel: true,
             submit: () => {
-                setImageUrl(null);
-                setFormData({
-                    category_id: "",
+                setFormData(prevState => ({
+                    ...prevState,
                     type: "",
                     date: "",
                     time: "",
@@ -159,7 +158,7 @@ const Create = () => {
                     to_location: "",
                     location: "",
                     details: "",
-                });
+                }));
                 setAlarms([]);
                 setIsAlarm(false);
             }
@@ -956,7 +955,7 @@ const Create = () => {
                         }
                         <Button
                             variant={"outline"}
-                            action={"secondary"}
+                            action={"primary"}
                             onPress={() => {
                                 if (alertForm.submit !== null) {
                                     alertForm.submit();
