@@ -31,6 +31,8 @@ import {register} from "@/src/api/api";
 import {useNavigation} from "@react-navigation/native";
 import {Ionicons} from "@expo/vector-icons";
 import {RegisterForm, AlertForm} from "@/src/utils/interfaceCase";
+import {Spinner} from "@/src/components/ui/spinner";
+import colors from "tailwindcss/colors";
 
 const Register = () => {
     const navigation = useNavigation();
@@ -52,6 +54,7 @@ const Register = () => {
         submit: null,
     });
     const [showAlert, setShowAlert] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChangeForm = (field: string, value: string) => {
         setRegisterForm(prevState => ({...prevState, [field]: value}));
@@ -99,7 +102,9 @@ const Register = () => {
             return;
         }
 
+        setIsLoading(true);
         const responseData = await register(registerForm);
+        setIsLoading(false);
 
         if (responseData === "success") {
             setAlertForm({
@@ -320,6 +325,16 @@ const Register = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Spinner */}
+            {
+                isLoading && (
+                    <Box className={"absolute w-full h-full"}>
+                        <Box className={"w-full h-full"} style={{opacity: 0.3, backgroundColor: "black"}}/>
+                        <Spinner size={"large"} color={colors.amber[600]} className={"absolute w-full h-full"}/>
+                    </Box>
+                )
+            }
         </Box>
     );
 };

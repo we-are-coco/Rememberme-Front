@@ -21,6 +21,8 @@ import {login} from "@/src/api/api";
 import {Pressable} from "@/src/components/ui/pressable";
 import {Ionicons} from "@expo/vector-icons";
 import {LoginForm, AlertForm} from "@/src/utils/interfaceCase";
+import {Spinner} from "@/src/components/ui/spinner";
+import colors from "tailwindcss/colors";
 
 const Login = () => {
     const navigation = useNavigation();
@@ -35,13 +37,16 @@ const Login = () => {
         submit: null,
     });
     const [showAlert, setShowAlert] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChangeForm = (field: string, value: string) => {
         setLoginForm(prevState => ({...prevState, [field]: value}));
     };
 
     const handleSubmit = async () => {
+        setIsLoading(true);
         const responseData = await login(loginForm);
+        setIsLoading(false);
 
         if (responseData === "success") {
             // @ts-ignore
@@ -169,6 +174,16 @@ const Login = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Spinner */}
+            {
+                isLoading && (
+                    <Box className={"absolute w-full h-full"}>
+                        <Box className={"w-full h-full"} style={{opacity: 0.3, backgroundColor: "black"}}/>
+                        <Spinner size={"large"} color={colors.amber[600]} className={"absolute w-full h-full"}/>
+                    </Box>
+                )
+            }
         </Box>
     );
 };
